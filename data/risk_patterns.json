@@ -1,0 +1,218 @@
+[
+  {
+    "pattern_id": "RP-001",
+    "route_type": "us_mexico_border",
+    "origin_region": "US-South",
+    "destination_region": "MX-North",
+    "risk_factors": {
+      "border_delays": {
+        "probability": 0.35,
+        "avg_delay_hours": 6,
+        "peak_seasons": ["holiday", "tax_season"]
+      },
+      "documentation_issues": {
+        "probability": 0.15,
+        "avg_delay_hours": 12,
+        "common_causes": ["missing_permits", "inspection_holds"]
+      },
+      "weather_related": {
+        "probability": 0.20,
+        "avg_delay_hours": 4,
+        "seasonal_months": [6, 7, 8, 9, 10, 11]
+      }
+    },
+    "historical_incidents": 47,
+    "success_rate": 0.78,
+    "avg_transit_days": 3.2,
+    "last_updated": { "$date": "2025-11-01T00:00:00Z" }
+  },
+  {
+    "pattern_id": "RP-002", 
+    "route_type": "us_domestic_west",
+    "origin_region": "US-West",
+    "destination_region": "US-West",
+    "risk_factors": {
+      "traffic_congestion": {
+        "probability": 0.45,
+        "avg_delay_hours": 2,
+        "peak_times": ["rush_hour", "friday_evening"]
+      },
+      "wildfire_season": {
+        "probability": 0.25,
+        "avg_delay_hours": 18,
+        "seasonal_months": [7, 8, 9, 10]
+      },
+      "port_congestion": {
+        "probability": 0.30,
+        "avg_delay_hours": 8,
+        "affected_cities": ["Los Angeles", "Long Beach", "Oakland"]
+      }
+    },
+    "historical_incidents": 23,
+    "success_rate": 0.85,
+    "avg_transit_days": 2.1,
+    "last_updated": { "$date": "2025-11-01T00:00:00Z" }
+  },
+  {
+    "pattern_id": "RP-003",
+    "route_type": "canada_us_border", 
+    "origin_region": "CA-Central",
+    "destination_region": "US-North",
+    "risk_factors": {
+      "winter_weather": {
+        "probability": 0.60,
+        "avg_delay_hours": 8,
+        "seasonal_months": [11, 12, 1, 2, 3]
+      },
+      "border_inspections": {
+        "probability": 0.25,
+        "avg_delay_hours": 4,
+        "random_frequency": "high"
+      },
+      "equipment_failures": {
+        "probability": 0.15,
+        "avg_delay_hours": 12,
+        "cold_weather_related": true
+      }
+    },
+    "historical_incidents": 31,
+    "success_rate": 0.74,
+    "avg_transit_days": 2.8,
+    "last_updated": { "$date": "2025-11-01T00:00:00Z" }
+  },
+  {
+    "pattern_id": "RP-004",
+    "route_type": "us_domestic_east",
+    "origin_region": "US-East", 
+    "destination_region": "US-East",
+    "risk_factors": {
+      "hurricane_season": {
+        "probability": 0.40,
+        "avg_delay_hours": 24,
+        "seasonal_months": [6, 7, 8, 9, 10, 11]
+      },
+      "bridge_tunnels": {
+        "probability": 0.20,
+        "avg_delay_hours": 3,
+        "infrastructure_bottlenecks": ["Holland Tunnel", "George Washington Bridge"]
+      },
+      "holiday_traffic": {
+        "probability": 0.35,
+        "avg_delay_hours": 6,
+        "peak_dates": ["thanksgiving", "christmas", "july_fourth"]
+      }
+    },
+    "historical_incidents": 18,
+    "success_rate": 0.88,
+    "avg_transit_days": 1.9,
+    "last_updated": { "$date": "2025-11-01T00:00:00Z" }
+  },
+  {
+    "pattern_id": "RP-005",
+    "route_type": "cross_continental",
+    "origin_region": "US-West",
+    "destination_region": "US-East", 
+    "risk_factors": {
+      "mountain_weather": {
+        "probability": 0.30,
+        "avg_delay_hours": 10,
+        "affected_passes": ["Rockies", "Sierra Nevada"]
+      },
+      "fuel_stops": {
+        "probability": 0.15,
+        "avg_delay_hours": 2,
+        "extended_delays_possible": true
+      },
+      "driver_fatigue": {
+        "probability": 0.20,
+        "avg_delay_hours": 8,
+        "mandatory_rest_periods": true
+      }
+    },
+    "historical_incidents": 42,
+    "success_rate": 0.81,
+    "avg_transit_days": 4.5,
+    "last_updated": { "$date": "2025-11-01T00:00:00Z" }
+  },
+  {
+    "pattern_id": "RP-006",
+    "route_type": "hazmat_specialized",
+    "origin_region": "Any",
+    "destination_region": "Any",
+    "risk_factors": {
+      "regulatory_compliance": {
+        "probability": 0.25,
+        "avg_delay_hours": 6,
+        "inspection_required": true
+      },
+      "specialized_routing": {
+        "probability": 0.20,
+        "avg_delay_hours": 4,
+        "tunnel_bridge_restrictions": true
+      },
+      "emergency_response": {
+        "probability": 0.05,
+        "avg_delay_hours": 48,
+        "severe_when_occurs": true
+      }
+    },
+    "historical_incidents": 8,
+    "success_rate": 0.92,
+    "avg_transit_days": 3.8,
+    "last_updated": { "$date": "2025-11-01T00:00:00Z" }
+  },
+  {
+    "pattern_id": "RP-007", 
+    "route_type": "high_value_cargo",
+    "origin_region": "Any",
+    "destination_region": "Any",
+    "risk_factors": {
+      "security_protocols": {
+        "probability": 0.30,
+        "avg_delay_hours": 3,
+        "additional_documentation": true
+      },
+      "theft_risk": {
+        "probability": 0.08,
+        "avg_delay_hours": 72,
+        "high_impact_events": true
+      },
+      "insurance_requirements": {
+        "probability": 0.15,
+        "avg_delay_hours": 2,
+        "verification_needed": true
+      }
+    },
+    "historical_incidents": 12,
+    "success_rate": 0.89,
+    "avg_transit_days": 3.1,
+    "last_updated": { "$date": "2025-11-01T00:00:00Z" }
+  },
+  {
+    "pattern_id": "RP-008",
+    "route_type": "temperature_controlled",
+    "origin_region": "Any", 
+    "destination_region": "Any",
+    "risk_factors": {
+      "equipment_failure": {
+        "probability": 0.12,
+        "avg_delay_hours": 16,
+        "cargo_loss_risk": "high"
+      },
+      "temperature_monitoring": {
+        "probability": 0.20,
+        "avg_delay_hours": 2,
+        "compliance_checks": true
+      },
+      "seasonal_challenges": {
+        "probability": 0.35,
+        "avg_delay_hours": 4,
+        "summer_winter_extremes": true
+      }
+    },
+    "historical_incidents": 15,
+    "success_rate": 0.91,
+    "avg_transit_days": 2.7,
+    "last_updated": { "$date": "2025-11-01T00:00:00Z" }
+  }
+]

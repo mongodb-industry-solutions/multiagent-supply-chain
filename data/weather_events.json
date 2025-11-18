@@ -1,0 +1,158 @@
+[
+  {
+    "event_id": "WE-2024-001",
+    "type": "hurricane",
+    "name": "Hurricane Milton Aftermath",
+    "severity": "major",
+    "status": "resolved",
+    "start_date": { "$date": "2024-10-09T00:00:00Z" },
+    "end_date": { "$date": "2024-10-15T00:00:00Z" },
+    "affected_regions": ["US-South", "US-East"],
+    "affected_states": ["FL", "GA", "SC", "NC"],
+    "impact": {
+      "avg_delay_hours": 36,
+      "routes_affected": 127,
+      "carriers_impacted": ["Southern Express", "Atlantic Freight", "Coastal Logistics"],
+      "estimated_cost": 2400000
+    },
+    "recovery_time_days": 6,
+    "lessons_learned": ["Better pre-positioning needed", "Alternate route planning critical"]
+  },
+  {
+    "event_id": "WE-2024-002", 
+    "type": "winter_storm",
+    "name": "Polar Vortex 2024",
+    "severity": "severe",
+    "status": "resolved",
+    "start_date": { "$date": "2024-01-15T00:00:00Z" },
+    "end_date": { "$date": "2024-01-20T00:00:00Z" },
+    "affected_regions": ["US-North", "CA-Central"],
+    "affected_states": ["MN", "WI", "MI", "ON", "MB"],
+    "impact": {
+      "avg_delay_hours": 18,
+      "routes_affected": 89,
+      "carriers_impacted": ["Northern Freight", "Canadian Express", "Great Lakes Transport"],
+      "estimated_cost": 1800000
+    },
+    "recovery_time_days": 3,
+    "lessons_learned": ["Winter equipment mandatory", "Temperature monitoring critical"]
+  },
+  {
+    "event_id": "WE-2024-003",
+    "type": "wildfire",
+    "name": "California Fire Season Peak", 
+    "severity": "major",
+    "status": "resolved",
+    "start_date": { "$date": "2024-08-10T00:00:00Z" },
+    "end_date": { "$date": "2024-09-05T00:00:00Z" },
+    "affected_regions": ["US-West"],
+    "affected_states": ["CA", "OR", "WA"],
+    "impact": {
+      "avg_delay_hours": 24,
+      "routes_affected": 156,
+      "carriers_impacted": ["Pacific Freight", "Western Express", "Coast to Coast"],
+      "estimated_cost": 3200000
+    },
+    "recovery_time_days": 8,
+    "lessons_learned": ["Air quality monitoring needed", "Evacuation route planning essential"]
+  },
+  {
+    "event_id": "WE-2024-004",
+    "type": "flooding",
+    "name": "Mississippi River Flooding",
+    "severity": "moderate",
+    "status": "resolved", 
+    "start_date": { "$date": "2024-04-12T00:00:00Z" },
+    "end_date": { "$date": "2024-04-25T00:00:00Z" },
+    "affected_regions": ["US-Central"],
+    "affected_states": ["MO", "IL", "IA", "AR", "LA"],
+    "impact": {
+      "avg_delay_hours": 12,
+      "routes_affected": 73,
+      "carriers_impacted": ["Midwest Logistics", "River Transport", "Central Freight"],
+      "estimated_cost": 950000
+    },
+    "recovery_time_days": 4,
+    "lessons_learned": ["Bridge inspection protocols", "Alternative bridge crossings mapped"]
+  },
+  {
+    "event_id": "WE-2025-001",
+    "type": "ice_storm", 
+    "name": "Early Winter Ice Storm",
+    "severity": "severe",
+    "status": "active",
+    "start_date": { "$date": "2025-11-12T00:00:00Z" },
+    "end_date": null,
+    "affected_regions": ["US-North", "CA-Central"],
+    "affected_states": ["NY", "VT", "NH", "ME", "QC", "ON"],
+    "impact": {
+      "avg_delay_hours": 22,
+      "routes_affected": 45,
+      "carriers_impacted": ["Northeast Express", "Canadian Border Transport"],
+      "estimated_cost": 1200000
+    },
+    "recovery_time_days": null,
+    "current_advisories": ["I-95 partially closed", "Border crossing delays expected"]
+  },
+  {
+    "event_id": "WE-2025-002",
+    "type": "drought_conditions",
+    "name": "Southwest Water Crisis Impact",
+    "severity": "moderate",
+    "status": "ongoing",
+    "start_date": { "$date": "2025-06-01T00:00:00Z" },
+    "end_date": null,
+    "affected_regions": ["US-Southwest"],
+    "affected_states": ["AZ", "NV", "UT", "NM"],
+    "impact": {
+      "avg_delay_hours": 6,
+      "routes_affected": 34,
+      "carriers_impacted": ["Desert Logistics", "Southwest Freight"],
+      "estimated_cost": 450000
+    },
+    "recovery_time_days": null,
+    "current_advisories": ["Weight restrictions on certain bridges", "Increased fire danger"]
+  },
+  {
+    "event_id": "WE-FORECAST-001",
+    "type": "winter_storm",
+    "name": "Thanksgiving Storm System",
+    "severity": "major",
+    "status": "forecasted",
+    "start_date": { "$date": "2025-11-26T00:00:00Z" },
+    "end_date": { "$date": "2025-11-29T00:00:00Z" },
+    "affected_regions": ["US-Central", "US-East"],
+    "affected_states": ["TX", "OK", "KS", "MO", "IL", "IN", "OH"],
+    "impact": {
+      "avg_delay_hours": 28,
+      "routes_affected": 200,
+      "carriers_impacted": ["Most major carriers"],
+      "estimated_cost": 4500000
+    },
+    "confidence": 0.78,
+    "recommendations": [
+      "Pre-position equipment south of storm path",
+      "Advise customers of potential delays",
+      "Activate contingency routing plans"
+    ]
+  },
+  {
+    "event_id": "WE-SEASONAL-001",
+    "type": "hurricane_season", 
+    "name": "2025 Atlantic Hurricane Season",
+    "severity": "above_normal",
+    "status": "active",
+    "start_date": { "$date": "2025-06-01T00:00:00Z" },
+    "end_date": { "$date": "2025-11-30T00:00:00Z" },
+    "affected_regions": ["US-South", "US-East"],
+    "affected_states": ["FL", "GA", "SC", "NC", "VA", "TX", "LA", "MS", "AL"],
+    "seasonal_forecast": {
+      "named_storms": 18,
+      "hurricanes": 9,
+      "major_hurricanes": 4,
+      "confidence": 0.72
+    },
+    "preparedness_level": "high",
+    "monitoring_systems": ["NOAA", "Emergency Management", "Carrier Networks"]
+  }
+]
