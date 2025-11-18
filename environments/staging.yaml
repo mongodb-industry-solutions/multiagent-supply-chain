@@ -1,12 +1,12 @@
 # Secret environment variables (references to K8s secrets)
 envSecrets:
-  MONGODB_URI: multiagent-pred-maint
-  DATABASE_NAME: multiagent-pred-maint
-  AWS_REGION: multiagent-pred-maint
-  AWS_PROFILE: multiagent-pred-maint
-  COMPLETION_MODEL: multiagent-pred-maint
-  EMBEDDING_MODEL: multiagent-pred-maint
-  NEXT_PUBLIC_ENV: multiagent-pred-maint
+  MONGODB_URI: multiagent-supply-chain
+  DATABASE_NAME: multiagent-supply-chain
+  AWS_REGION: multiagent-supply-chain
+  AWS_PROFILE: multiagent-supply-chain
+  COMPLETION_MODEL: multiagent-supply-chain
+  EMBEDDING_MODEL: multiagent-supply-chain
+  NEXT_PUBLIC_ENV: multiagent-supply-chain
 
 serviceAccount:
   enabled: true

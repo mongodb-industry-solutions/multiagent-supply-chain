@@ -22,7 +22,7 @@ steps:
     settings:
       create_repository: true
       registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-      repo: industrysolutions/multiagent-pred-maint # Change to demo name (short)
+      repo: industrysolutions/multiagent-supply-chain # Change to demo name (short)
       tags:
         - git-${DRONE_COMMIT_SHA:0:7}
         - latest
@@ -41,12 +41,12 @@ steps:
       chart_version: 4.25.0
       add_repos: [mongodb=https://10gen.github.io/helm-charts]
       namespace: industrysolutions
-      release: multiagent-predictive-maintenance # Change to demo name (full)
+      release: multiagent-supply-chain # Change to demo name (full)
       values:
         - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
-        - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/multiagent-pred-maint" # Change to demo name (short)
+        - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/multiagent-supply-chain" # Change to demo name (short)
         - "ingress.enabled=true"
-        - "ingress.hosts[0]=multiagent-predictive-maintenance.industrysolutions.staging.corp.mongodb.com" # Change to demo name (full)
+        - "ingress.hosts[0]=multiagent-supply-chain.industrysolutions.staging.corp.mongodb.com" # Change to demo name (full)
         - "mesh.enabled=true"
         - "resources.limits.cpu=500m"
         - "resources.limits.memory=1024Mi"
@@ -83,7 +83,7 @@ steps:
     settings:
       create_repository: true
       registry: 795250896452.dkr.ecr.us-east-1.amazonaws.com
-      repo: industrysolutions/multiagent-pred-maint
+      repo: industrysolutions/multiagent-supply-chain
       tags:
         - git-${DRONE_COMMIT_SHA:0:7}
         - latest
@@ -102,12 +102,12 @@ steps:
       chart_version: 4.25.0
       add_repos: [mongodb=https://10gen.github.io/helm-charts]
       namespace: industrysolutions
-      release: multiagent-predictive-maintenance
+      release: multiagent-supply-chain
       values:
         - "image.tag=git-${DRONE_COMMIT_SHA:0:7}"
-        - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/multiagent-pred-maint"
+        - "image.repository=795250896452.dkr.ecr.us-east-1.amazonaws.com/industrysolutions/multiagent-supply-chain"
         - "ingress.enabled=true"
-        - "ingress.hosts[0]=multiagent-predictive-maintenance.industrysolutions.prod.corp.mongodb.com"
+        - "ingress.hosts[0]=multiagent-supply-chain.industrysolutions.prod.corp.mongodb.com"
         - "mesh.enabled=true"
         - "resources.limits.cpu=500m"
         - "resources.limits.memory=1024Mi"
