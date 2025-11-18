@@ -1,31 +1,11 @@
-# Agentic Predictive Maintenance System
+# Agentic Supply-Chain Management 
 
-Manufacturers are moving beyond traditional predictive maintenance—it's not just about forecasting failures, but about acting on issues instantly and autonomously. This project demonstrates how agentic AI, orchestrated by LangGraph.js and powered by MongoDB Atlas and AWS Bedrock, enables multi-agent systems that detect problems and coordinate rapid, intelligent responses across the shop floor. 
+The demo walks the users through a typical situation: handling a delayed shipment. The first agent helps the user do a root cause analysis of the delayed shipment, by looking at historical shipments, and QA documents from past shipments. Using a mixture of vector search and historical queries, the agent gives the user a detailed explanation of the situation, as well as alternative shippers.
 
-This demo showcases:
+From there, the user can select a shipment, and look for alternative routes with the help of the transportation planning agent. The transportation planning agent uses MongoDB’s geospatial queries, to find other carriers that can take over the delayed shipment, and it showcases how MongoDB can handle both geographical, and structured data in the same collection.
 
-- **Autonomous action:** AI agents diagnose, plan, and execute maintenance tasks in real time, minimizing human intervention and downtime.
-- **Operational agility:** The system adapts to new data, equipment, and workflows, supporting continuous improvement.
-- **Unified, scalable data foundation:** MongoDB makes it easy to build, operate, and evolve agentic AI solutions—handling diverse data, enabling fast search, and supporting real-time decision-making.
+Lastly, the user is able to do some risk analysis on the route. By looking at both structured and unstructured data about weather, compliance, border disruptances, etc, the agent is able to give the user more context on the potential risks associated with that route, to add an extra layer of intelligence when rescheduling the delayed shipment.
 
-## Architecture
-
-![High Level Architecture](public/img/high-level-architecture.svg)
-
-**How it works:**
-
-1. **Detection:** Agents monitor machine telemetry and logs, triggering alerts on anomalies.
-2. **Diagnosis:** The Failure Agent uses MongoDB’s flexible data model and vector search to rapidly analyze root causes.
-3. **Action:** The Work Order Agent drafts and routes maintenance tasks, leveraging historical data and inventory.
-4. **Optimization:** The Planning Agent schedules work to minimize disruption, using real-time production and staff data.
-
-**Why MongoDB?**
-
-- **Unified data layer:** Handles structured, unstructured, and time series data for all agents and workflows.
-- **Real-time search & retrieval:** Atlas Search and vector search enable fast, context-rich decision-making.
-- **Scalable, adaptable foundation:** Easily extend to new agents, data sources, and operational needs.
-
-This architecture lets manufacturers automate not just prediction, but coordinated action—unlocking the next level of operational excellence.
 
 ## Getting Started
 
@@ -99,60 +79,3 @@ This architecture lets manufacturers automate not just prediction, but coordinat
 
 Open [http://localhost:8080](http://localhost:8080) in your browser to explore the demo.
 
-## Personalizing and Extending the Demo
-
-This demo is designed to be flexible and extensible. Here are some ways you can tailor it to your needs:
-
-### Production Calendar Customization
-
-- By default, the production calendar is populated with the next 6 months from today.
-- You can manually edit the `production_calendar` collection in MongoDB to adjust tasks and schedules.
-- To auto-populate the calendar, use:
-  ```bash
-  npm run generate_calendar <months>
-  ```
-  Replace `<months>` with the number of months you want to generate. **Note:** This script will remove the previous calendar before creating a new one.
-
-### Adding Documentation, Manuals, or Interviews
-
-- You can add your own documentation, manual chunks, or interview transcripts directly to the relevant collections (`manuals`, `interviews`, etc.).
-- After adding new documents, run:
-  ```bash
-  npm run embed
-  ```
-  This will embed the new content and update the vector indexes for search and retrieval.
-- To customize which fields are embedded or change the embedding field name, edit the configuration in [`scripts/config.js`](scripts/config.js):
-  ```javascript
-  // Example config.js entry
-  const config = [
-    {
-      collection: "manuals",
-      textFields: ["section", "text"],
-      embeddingField: "embedding",
-      indexName: "default",
-      similarity: "cosine",
-      numDimensions: 1024, // This value depends on the embedding model selected
-    },
-    // Add more collections as needed
-  ];
-  export default config;
-  ```
-  - `collection`: The MongoDB collection name.
-  - `textFields`: Array of fields to concatenate and embed.
-  - `embeddingField`: Field name to store the embedding.
-  - `indexName`, `similarity`, `numDimensions`: Vector index settings. **Note:** `numDimensions` should match the output dimension of your selected embedding model.
-
-### Creating New Agents and Tools
-
-- To create a new agent, copy the `test` folder inside `src/agents` and give it a new name.
-- Inside your new agent folder, you can:
-  - Edit `tools.js` to define the agent's tools and capabilities.
-  - Edit `graph.js` to set the system prompt and agent logic.
-- Once your agent is ready, add it to [`src/agents/config.js`](src/agents/config.js) so it appears in the demo.
-- You can test your agent from the Agent Sandbox section of the application.
-
----
-
-Thank you for exploring the Agentic Predictive Maintenance demo! This repository is maintained by MongoDB Industry Solutions. We encourage you to experiment, extend, and adapt the system to your own use cases. If you have questions or feedback, please reach out at industry.solutions@mongodb.com or open an issue.
-
-Enjoy building the future of modern manufacturing!
