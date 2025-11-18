@@ -21,26 +21,26 @@ export default function LogisticsMap({ warehouses = [], carriers = [], feasibleC
     return locations[key] || null;
   };
   
+
+
   useEffect(() => {
-    // Fix leaflet icons on client-side only
     if (typeof window !== 'undefined') {
-      const L = require('leaflet')
-      
-      // Fix for default markers in Next.js
-      delete L.Icon.Default.prototype._getIconUrl
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+      import('leaflet').then(L => {
+        delete L.Icon.Default.prototype._getIconUrl
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+        })
+        window.L = L
       })
     }
   }, [])
 
   // Create custom icons
   const createCustomIcon = (color) => {
-    if (typeof window === 'undefined') return null
-    
-    const L = require('leaflet')
+    if (typeof window === 'undefined' || !window.L) return null
+    const L = window.L
     return new L.Icon({
       iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
       shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/images/marker-shadow.png',
@@ -53,9 +53,8 @@ export default function LogisticsMap({ warehouses = [], carriers = [], feasibleC
 
   // Create custom carrier icons with specific colors
   const createCarrierIcon = (color, index) => {
-    if (typeof window === 'undefined') return null
-    
-    const L = require('leaflet')
+    if (typeof window === 'undefined' || !window.L) return null
+    const L = window.L
     
     // Create a custom HTML marker with the carrier color
     return new L.DivIcon({
