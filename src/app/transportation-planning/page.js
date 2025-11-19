@@ -216,7 +216,7 @@ export default function TransportationPlanningPage() {
       sessionStorage.setItem('selected_route_for_risk', JSON.stringify(riskAnalysisData))
       
       // Navigate to Risk Analysis
-      router.push('/risk-analysis')
+      // router.push('/risk-analysis')
     }
   }
 
@@ -317,7 +317,7 @@ export default function TransportationPlanningPage() {
                 </div>
                 
                 {/* Analyze Risk Button */}
-                {selectedRoute && (
+                {/* {selectedRoute && (
                   <div className="mt-4 pt-3 border-t border-gray-200">
                     <Button
                       variant="primary"
@@ -327,7 +327,7 @@ export default function TransportationPlanningPage() {
                       🎯 Analyze Risk for {selectedRoute.carrier}
                     </Button>
                   </div>
-                )}
+                )} */}
               </div>
             )}
             
