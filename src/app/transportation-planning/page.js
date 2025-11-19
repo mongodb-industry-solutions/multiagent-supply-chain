@@ -216,7 +216,7 @@ export default function TransportationPlanningPage() {
       sessionStorage.setItem('selected_route_for_risk', JSON.stringify(riskAnalysisData))
       
       // Navigate to Risk Analysis
-      router.push('/risk-analysis')
+      // router.push('/risk-analysis')
     }
   }
 

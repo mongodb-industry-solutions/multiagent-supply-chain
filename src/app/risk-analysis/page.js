@@ -1,16 +1,16 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import AgentStatus from "@/components/agentStatus/AgentStatus";
-import { calculateVaR } from "../../agents/risk-analysis/tools";
+
 import { H3, Description, Subtitle } from "@leafygreen-ui/typography";
 import Button from "@leafygreen-ui/button";
 import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider";
+import CardList from "@/components/cardList/CardList";
+import { useRiskAnalysis } from "./hooks";
 
 export default function RiskAnalysis() {
   const [selectedRouteData, setSelectedRouteData] = useState(null);
   const [riskAnalysis, setRiskAnalysis] = useState(null);
-  const [agentActive, setAgentActive] = useState(false);
-  const [agentLogs, setAgentLogs] = useState([]);
 
   // Slider weights state (0-1)
   const [weights, setWeights] = useState({
@@ -24,36 +24,28 @@ export default function RiskAnalysis() {
     // Check for selected route data from Transportation Planning
     const routeData = sessionStorage.getItem('selected_route_for_risk');
     if (routeData) {
+
+      console.log("Retrieved route data for risk analysis:", routeData);
       const parsedData = JSON.parse(routeData);
 
       setSelectedRouteData(parsedData);
     }
   }, []);
 
-  const handleAnalyzeRisk = async () => {
-    if (!selectedRouteData) return;
-    setAgentLogs([
-      { type: "update", name: "tool_start", values: { name: "Fetching Route Data" }, ts: Date.now() }
-    ]);
-    setRiskAnalysis(null);
-    setAgentActive(true);
-    setTimeout(() => {
-      setAgentLogs(logs => [
-        ...logs,
-        { type: "update", name: "tool_end", values: { name: "Fetching Route Data" }, ts: Date.now() },
-        { type: "update", name: "tool_start", values: { name: "Calculating VaR" }, ts: Date.now() }
-      ]);
-      setTimeout(() => {
-        const result = calculateVaR(selectedRouteData, weights);
-        setRiskAnalysis(result);
-        setAgentLogs(logs => [
-          ...logs,
-          { type: "update", name: "tool_end", values: { name: "Calculating VaR" }, ts: Date.now() }
-        ]);
-        setAgentActive(false);
-      }, 1000);
-    }, 1000);
-  };
+      const {
+        availableRoutes,
+        selectedRouteId,
+        setSelectedRouteId,
+        agentActive,
+        riskReports,
+        agentLogs,
+        loadAvailableRoutes,
+        handleAnalyzeSelectedRoute,
+      } = useRiskAnalysis();
+
+      useEffect(() => {
+        loadAvailableRoutes();
+      }, [loadAvailableRoutes]);
 
   return (
     <LeafyGreenProvider baseFontSize={16}>
@@ -69,7 +61,7 @@ export default function RiskAnalysis() {
         <div className="flex flex-1 min-h-0 w-full gap-6 px-6 pb-4">
           {/* Panel 1: Selected Route Info */}
           {selectedRouteData && (
-            <section className="flex flex-col w-1/3 border border-gray-200 rounded-xl bg-white p-4">
+            <section className="flex flex-col w-1/2 border border-gray-200 rounded-xl bg-white p-4">
               {/* ...existing code for route details and sliders... */}
               <div className="space-y-2 text-lg font-semibold text-black bg-white p-4 rounded-lg mb-4">
                 <Subtitle className="mb-3 text-black">Selected Route</Subtitle>
@@ -162,19 +154,11 @@ export default function RiskAnalysis() {
                   </div>
                 </div>
               </div>
-              <Button
-                variant="primary"
-                onClick={handleAnalyzeRisk}
-                disabled={agentActive}
-                className="mt-4"
-              >
-                {agentActive ? 'Analyzing...' : 'Start Risk Analysis'}
-              </Button>
             </section>
           )}
 
           {/* Panel 2: Central Agent Panel */}
-          <section className="flex flex-col w-1/3 border border-gray-200 rounded-xl bg-white p-4 m-2 overflow-hidden min-w-[320px] min-h-[320px]">
+          <section className="flex flex-col w-1/2 border border-gray-200 rounded-xl bg-white p-4 m-2 overflow-hidden min-w-[320px] min-h-[320px]">
             {/* Agent Status */}
             <div className="mb-4">
               <AgentStatus
@@ -207,10 +191,10 @@ export default function RiskAnalysis() {
           </section>
 
           {/* Panel 3: Risk Cards (to be implemented) */}
-          <section className="flex flex-col w-1/3 border border-gray-200 rounded-xl bg-white p-4">
+          {/* <section className="flex flex-col w-1/3 border border-gray-200 rounded-xl bg-white p-4">
             <Subtitle className="mb-3 text-black">Risk Factors</Subtitle>
             <div className="text-gray-400">Risk cards will be shown here after analysis</div>
-          </section>
+          </section> */}
 
           {/* Empty State */}
           {!selectedRouteData && (

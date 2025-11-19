@@ -1,95 +1,128 @@
-// Risk Analysis Tools
+import { tool } from "@langchain/core/tools";
+import getMongoClientPromise from "@/integrations/mongodb/client";
 
-/**
- * Calculates Value at Risk (VaR) for a given route and risk weights.
- * @param {Object} routeData - Route details (cost, reliability, etc.)
- * @param {Object} weights - Risk factor weights (0-1)
- * @returns {Object} VaR result with breakdown
- */
-export function calculateVaR(routeData, weights) {
-	// Realistic risk factor calculations
-	const factors = {
-		carrierReliability: getCarrierReliabilityRisk(routeData),
-		routeComplexity: getRouteComplexityRisk(routeData),
-		weatherPatterns: getWeatherPatternsRisk(routeData),
-		borderCrossing: getBorderCrossingRisk(routeData),
-	};
-
-	/**
-	 * Carrier Reliability Risk: Normalized inverse of reliability score (0 = best, 1 = worst)
-	 */
-	function getCarrierReliabilityRisk(data) {
-		if (typeof data.reliability_score === 'number') {
-			// reliability_score: 0-100 or 0-1
-			const score = data.reliability_score > 1 ? data.reliability_score / 100 : data.reliability_score;
-			return 1 - score;
-		}
-		return 0.5; // default risk
+// Query relevant weather events for the route and dates
+export const retrieveWeatherEvents = tool(
+	async ({ origin, destination, date, n = 5 }) => {
+		const client = await getMongoClientPromise();
+		const dbName = process.env.DATABASE_NAME;
+		const db = client.db(dbName);
+		// Find weather events near the origin/destination and date
+		const events = await db.collection("weather_events")
+			.find({
+				$or: [
+					{ location: origin },
+					{ location: destination }
+				],
+				date: { $lte: date }
+			})
+			.sort({ date: -1 })
+			.limit(n)
+			.toArray();
+		return JSON.stringify(events);
+	},
+	{
+		name: "retrieve_weather_events",
+		description: "Retrieve recent weather events for a route and date.",
+		schema: {
+			type: "object",
+			properties: {
+				origin: { type: "string", description: "Origin city/state" },
+				destination: { type: "string", description: "Destination city/state" },
+				date: { type: "string", description: "ISO date string" },
+				n: { type: "number", description: "Number of events to return", default: 5 }
+			},
+			required: ["origin", "destination", "date"],
+		},
 	}
+);
 
-	/**
-	 * Route Complexity Risk: Based on number of segments, crossings, or a provided score
-	 */
-	function getRouteComplexityRisk(data) {
-		if (typeof data.complexity_score === 'number') {
-			return data.complexity_score; // expected 0-1
-		}
-		// Fallback: use distance or a default if segments do not exist
-		if (data.route && typeof data.route.distance === 'number') {
-			// Assume max distance of 2000km for normalization
-			const maxDistance = 2000;
-			return Math.min(data.route.distance / maxDistance, 1);
-		}
-		// If neither, use 0.5 as default
-		return 0.5;
+// Query historical border incidents for the route
+export const retrieveBorderIncidents = tool(
+	async ({ border, date, n = 5 }) => {
+		const client = await getMongoClientPromise();
+		const dbName = process.env.DATABASE_NAME;
+		const db = client.db(dbName);
+		const incidents = await db.collection("incidents")
+			.find({
+				type: "border",
+				border,
+				date: { $lte: date }
+			})
+			.sort({ date: -1 })
+			.limit(n)
+			.toArray();
+		return JSON.stringify(incidents);
+	},
+	{
+		name: "retrieve_border_incidents",
+		description: "Retrieve recent border crossing incidents for a given border and date.",
+		schema: {
+			type: "object",
+			properties: {
+				border: { type: "string", description: "Border crossing name or code" },
+				date: { type: "string", description: "ISO date string" },
+				n: { type: "number", description: "Number of incidents to return", default: 5 }
+			},
+			required: ["border", "date"],
+		},
 	}
+);
 
-	/**
-	 * Weather Patterns Risk: Based on historical weather events or provided risk
-	 */
-	function getWeatherPatternsRisk(data) {
-		if (typeof data.weather_risk === 'number') {
-			return data.weather_risk; // expected 0-1
-		}
-		if (data.weather_events && Array.isArray(data.weather_events)) {
-			// More events = higher risk
-			const maxEvents = 20;
-			return Math.min(data.weather_events.length / maxEvents, 1);
-		}
-		return 0.5;
+// Get carrier reliability history
+export const retrieveCarrierPerformance = tool(
+	async ({ carrier, n = 5 }) => {
+		const client = await getMongoClientPromise();
+		const dbName = process.env.DATABASE_NAME;
+		const db = client.db(dbName);
+		const shipments = await db.collection("shipments")
+			.find({ carrier })
+			.sort({ created_at: -1 })
+			.limit(n)
+			.toArray();
+		return JSON.stringify(shipments);
+	},
+	{
+		name: "retrieve_carrier_performance",
+		description: "Retrieve recent shipment performance for a specific carrier.",
+		schema: {
+			type: "object",
+			properties: {
+				carrier: { type: "string", description: "Carrier name" },
+				n: { type: "number", description: "Number of shipments to return", default: 5 }
+			},
+			required: ["carrier"],
+		},
 	}
+);
 
-	/**
-	 * Border Crossing Risk: Based on historical delays/incidents or provided risk
-	 */
-	function getBorderCrossingRisk(data) {
-		if (typeof data.border_risk === 'number') {
-			return data.border_risk; // expected 0-1
-		}
-		if (data.border_events && Array.isArray(data.border_events)) {
-			// More events = higher risk
-			const maxEvents = 10;
-			return Math.min(data.border_events.length / maxEvents, 1);
-		}
-		return 0.5;
+// Query historical data about similar route complexity
+export const retrieveRouteComplexity = tool(
+	async ({ origin, destination, n = 5 }) => {
+		const client = await getMongoClientPromise();
+		const dbName = process.env.DATABASE_NAME;
+		const db = client.db(dbName);
+		const routes = await db.collection("shipments")
+			.find({
+				"route.origin.city": origin.city,
+				"route.destination.city": destination.city
+			})
+			.sort({ created_at: -1 })
+			.limit(n)
+			.toArray();
+		return JSON.stringify(routes);
+	},
+	{
+		name: "retrieve_route_complexity",
+		description: "Retrieve historical shipments for similar routes to analyze complexity.",
+		schema: {
+			type: "object",
+			properties: {
+				origin: { type: "object", description: "Origin city/state", properties: { city: { type: "string" } } },
+				destination: { type: "object", description: "Destination city/state", properties: { city: { type: "string" } } },
+				n: { type: "number", description: "Number of routes to return", default: 5 }
+			},
+			required: ["origin", "destination"],
+		},
 	}
-
-	// Weighted sum of risk factors
-	const weightedRisk =
-		(factors.carrierReliability * (weights.carrierReliability || 0)) +
-		(factors.routeComplexity * (weights.routeComplexity || 0)) +
-		(factors.weatherPatterns * (weights.weatherPatterns || 0)) +
-		(factors.borderCrossing * (weights.borderCrossing || 0));
-
-	// VaR formula: Estimated Cost * (1 + weightedRisk)
-	const estimatedCost = Number(routeData.cost) || 0;
-	const valueAtRisk = estimatedCost * (1 + weightedRisk);
-
-	return {
-		valueAtRisk,
-		weightedRisk,
-		factors,
-		weights,
-		estimatedCost,
-	};
-}
+);
