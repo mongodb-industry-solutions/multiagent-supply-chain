@@ -1,95 +1,357 @@
-// Risk Analysis Tools
+import { tool } from "@langchain/core/tools";
+import getMongoClientPromise from "@/integrations/mongodb/client";
 
-/**
- * Calculates Value at Risk (VaR) for a given route and risk weights.
- * @param {Object} routeData - Route details (cost, reliability, etc.)
- * @param {Object} weights - Risk factor weights (0-1)
- * @returns {Object} VaR result with breakdown
- */
-export function calculateVaR(routeData, weights) {
-	// Realistic risk factor calculations
-	const factors = {
-		carrierReliability: getCarrierReliabilityRisk(routeData),
-		routeComplexity: getRouteComplexityRisk(routeData),
-		weatherPatterns: getWeatherPatternsRisk(routeData),
-		borderCrossing: getBorderCrossingRisk(routeData),
-	};
-
-	/**
-	 * Carrier Reliability Risk: Normalized inverse of reliability score (0 = best, 1 = worst)
-	 */
-	function getCarrierReliabilityRisk(data) {
-		if (typeof data.reliability_score === 'number') {
-			// reliability_score: 0-100 or 0-1
-			const score = data.reliability_score > 1 ? data.reliability_score / 100 : data.reliability_score;
-			return 1 - score;
-		}
-		return 0.5; // default risk
+const parseStateCode = (value) => {
+	if (!value) return null;
+	if (typeof value === "string") {
+		const parts = value.split(",").map((p) => p.trim());
+		const candidate = parts[parts.length - 1] || parts[0];
+		return candidate ? candidate.toUpperCase() : null;
 	}
-
-	/**
-	 * Route Complexity Risk: Based on number of segments, crossings, or a provided score
-	 */
-	function getRouteComplexityRisk(data) {
-		if (typeof data.complexity_score === 'number') {
-			return data.complexity_score; // expected 0-1
-		}
-		// Fallback: use distance or a default if segments do not exist
-		if (data.route && typeof data.route.distance === 'number') {
-			// Assume max distance of 2000km for normalization
-			const maxDistance = 2000;
-			return Math.min(data.route.distance / maxDistance, 1);
-		}
-		// If neither, use 0.5 as default
-		return 0.5;
+	if (typeof value === "object") {
+		return value.state ? value.state.toUpperCase() : null;
 	}
+	return null;
+};
 
-	/**
-	 * Weather Patterns Risk: Based on historical weather events or provided risk
-	 */
-	function getWeatherPatternsRisk(data) {
-		if (typeof data.weather_risk === 'number') {
-			return data.weather_risk; // expected 0-1
+const normalizeDate = (value) => {
+	if (!value) return null;
+	if (value instanceof Date) return value;
+	if (typeof value === "string") return new Date(value);
+	if (value.$date) return new Date(value.$date);
+	return null;
+};
+
+const ACTIVE_STATUSES = ["active", "ongoing", "forecasted"];
+
+// Query relevant weather events for the route and dates
+export const retrieveWeatherEvents = tool(
+	async ({ origin, destination, date, n = 5 }) => {
+		try {
+			const client = await getMongoClientPromise();
+			const dbName = process.env.DATABASE_NAME;
+			const db = client.db(dbName);
+
+			// Handle date parsing - support ISO strings, MongoDB $date format, or Date objects
+			let analysisDate;
+			if (!date) {
+				analysisDate = new Date();
+			} else if (typeof date === 'string') {
+				analysisDate = new Date(date);
+			} else if (date.$date) {
+				analysisDate = new Date(date.$date);
+			} else if (date instanceof Date) {
+				analysisDate = date;
+			} else {
+				analysisDate = new Date();
+			}
+			
+			if (isNaN(analysisDate.getTime())) {
+				console.warn("[retrieveWeatherEvents] Invalid date, using current date:", date);
+				analysisDate = new Date();
+			}
+		const windowStart = new Date(analysisDate);
+		windowStart.setDate(windowStart.getDate() - 30);
+		const windowEnd = new Date(analysisDate);
+		windowEnd.setDate(windowEnd.getDate() + 30);
+
+		const stateCodes = [
+			parseStateCode(origin),
+			parseStateCode(destination),
+		]
+			.filter(Boolean)
+			.map((state) => state.toUpperCase());
+
+		const stateQuery = stateCodes.length
+			? { affected_states: { $in: stateCodes } }
+			: {};
+
+		const rawEvents = await db
+			.collection("weather_events")
+			.find(stateQuery)
+			.toArray();
+
+		const relevantEvents = rawEvents
+			.filter((event) => {
+				if (!stateCodes.length) return true;
+				const eventStates = (event.affected_states || []).map((s) =>
+					s.toUpperCase()
+				);
+				return eventStates.some((state) => stateCodes.includes(state));
+			})
+			.filter((event) => {
+				const startDate = normalizeDate(event.start_date);
+				const endDate = normalizeDate(event.end_date);
+				const status = (event.status || "").toLowerCase();
+
+				if (startDate && endDate) {
+					return (
+						analysisDate >= startDate &&
+						analysisDate <= endDate
+					);
+				}
+
+				if (startDate && !endDate && analysisDate >= startDate) {
+					return true;
+				}
+
+				if (ACTIVE_STATUSES.includes(status)) {
+					if (!startDate) return true;
+					return (
+						startDate <= windowEnd &&
+						startDate >= windowStart
+					);
+				}
+
+				if (startDate) {
+					return (
+						startDate <= windowEnd &&
+						startDate >= windowStart
+					);
+				}
+
+				return false;
+			})
+			.sort((a, b) => {
+				const aStart = normalizeDate(a.start_date)?.getTime() || 0;
+				const bStart = normalizeDate(b.start_date)?.getTime() || 0;
+				return bStart - aStart;
+			})
+			.slice(0, n);
+
+			return JSON.stringify(relevantEvents);
+		} catch (error) {
+			console.error("[retrieveWeatherEvents] Error:", error);
+			return JSON.stringify({
+				error: error.message || String(error),
+				events: [],
+			});
 		}
-		if (data.weather_events && Array.isArray(data.weather_events)) {
-			// More events = higher risk
-			const maxEvents = 20;
-			return Math.min(data.weather_events.length / maxEvents, 1);
-		}
-		return 0.5;
+	},
+	{
+		name: "retrieve_weather_events",
+		description:
+			"Retrieve relevant weather or seasonal events affecting the origin/destination states near the shipment date.",
+		schema: {
+			type: "object",
+			properties: {
+				name: {
+					type: "string",
+					description: "Name of the tool for identification purposes",
+					enum: ["retrieve_weather_events"],
+				  },
+				origin: {
+					type: ["object", "string"],
+					description:
+						"Origin location (expects { city, state } but also accepts a comma-delimited string).",
+				},
+				destination: {
+					type: ["object", "string"],
+					description:
+						"Destination location (expects { city, state } but also accepts a comma-delimited string).",
+				},
+				date: {
+					type: "string",
+					description:
+						"Shipment ISO date string (use route.estimated_delivery, route.shipment_date, or created_at).",
+				},
+				n: {
+					type: "number",
+					description: "Number of events to return",
+					default: 5,
+				},
+			},
+			required: ["origin", "destination", "date"],
+		},
 	}
+);
 
-	/**
-	 * Border Crossing Risk: Based on historical delays/incidents or provided risk
-	 */
-	function getBorderCrossingRisk(data) {
-		if (typeof data.border_risk === 'number') {
-			return data.border_risk; // expected 0-1
+export const extractWeightRecommendation = tool(
+	async ({ analysis, weightType }) => {
+		try {
+			const lines = analysis.split("\n");
+			for (const line of lines) {
+				const lowerLine = line.toLowerCase();
+				if (lowerLine.includes(weightType.toLowerCase()) && lowerLine.includes("increase")) {
+					return "increase";
+				}
+				if (lowerLine.includes(weightType.toLowerCase()) && lowerLine.includes("decrease")) {
+					return "decrease";
+				}
+			}
+			return "no_change";
+		} catch (error) {
+			console.error("[extractWeightRecommendation] Error:", error);
+			return "no_change";
 		}
-		if (data.border_events && Array.isArray(data.border_events)) {
-			// More events = higher risk
-			const maxEvents = 10;
-			return Math.min(data.border_events.length / maxEvents, 1);
-		}
-		return 0.5;
+		
+	},
+	{
+		name: "extract_weight_recommendation",
+		description:
+			"Extract recommendation to increase, decrease, or make no change to a specific risk weight based on the analysis.",
+		schema: {
+			type: "object",
+			properties: {
+				analysis: {
+					type: "string",
+					description: "The risk analysis text to parse for recommendations.",
+				},
+				weightType: {
+					type: "string",
+					description: "The type of weight to check (e.g., 'weather', 'border delays').",
+				},
+			},
+			required: ["analysis", "weightType"],
+		},
 	}
+);
 
-	// Weighted sum of risk factors
-	const weightedRisk =
-		(factors.carrierReliability * (weights.carrierReliability || 0)) +
-		(factors.routeComplexity * (weights.routeComplexity || 0)) +
-		(factors.weatherPatterns * (weights.weatherPatterns || 0)) +
-		(factors.borderCrossing * (weights.borderCrossing || 0));
+// Query historical border incidents for the route
+export const retrieveBorderIncidents = tool(
+	async ({ border, date, n = 5 }) => {
+		try {
+			const client = await getMongoClientPromise();
+			const dbName = process.env.DATABASE_NAME;
+			const db = client.db(dbName);
+			
+			// Normalize date for query
+			let queryDate = date;
+			if (date && typeof date === 'object' && date.$date) {
+				queryDate = date.$date;
+			} else if (date instanceof Date) {
+				queryDate = date.toISOString();
+			}
+			
+			const incidents = await db.collection("incidents")
+				.find({
+					type: "border",
+					border,
+					date: { $lte: queryDate }
+				})
+				.sort({ date: -1 })
+				.limit(n)
+				.toArray();
+			return JSON.stringify(incidents);
+		} catch (error) {
+			console.error("[retrieveBorderIncidents] Error:", error);
+			return JSON.stringify({
+				error: error.message || String(error),
+				incidents: [],
+			});
+		}
+	},
+	{
+		name: "retrieve_border_incidents",
+		description: "Retrieve recent border crossing incidents for a given border and date.",
+		schema: {
+			type: "object",
+			name: {
+					type: "string",
+					description: "Name of the tool for identification purposes",
+					enum: ["retrieve_border_incidents"],
+				  },
+			properties: {
+				border: { type: "string", description: "Border crossing name or code" },
+				date: { type: "string", description: "ISO date string" },
+				n: { type: "number", description: "Number of incidents to return", default: 5 }
+			},
+			required: ["border", "date"],
+		},
+	}
+);
 
-	// VaR formula: Estimated Cost * (1 + weightedRisk)
-	const estimatedCost = Number(routeData.cost) || 0;
-	const valueAtRisk = estimatedCost * (1 + weightedRisk);
+// Get carrier reliability history
+export const retrieveCarrierPerformance = tool(
+	async ({ carrier, n = 5 }) => {
+		try {
+			const client = await getMongoClientPromise();
+			const dbName = process.env.DATABASE_NAME;
+			const db = client.db(dbName);
+			const shipments = await db.collection("shipments")
+				.find({ carrier })
+				.sort({ created_at: -1 })
+				.limit(n)
+				.toArray();
+			return JSON.stringify(shipments);
+		} catch (error) {
+			console.error("[retrieveCarrierPerformance] Error:", error);
+			return JSON.stringify({
+				error: error.message || String(error),
+				shipments: [],
+			});
+		}
+	},
+	{
+		name: "retrieve_carrier_performance",
+		description: "Retrieve recent shipment performance for a specific carrier.",
+		schema: {
+			type: "object",
+			name: {
+					type: "string",
+					description: "Name of the tool for identification purposes",
+					enum: ["retrieve_carrier_performance"],
+				  },
+			properties: {
+				carrier: { type: "string", description: "Carrier name" },
+				n: { type: "number", description: "Number of shipments to return", default: 5 }
+			},
+			required: ["carrier"],
+		},
+	}
+);
 
-	return {
-		valueAtRisk,
-		weightedRisk,
-		factors,
-		weights,
-		estimatedCost,
-	};
-}
+// // Query historical data about similar route complexity
+// export const retrieveRouteComplexity = tool(
+// 	async ({ origin, destination, n = 5 }) => {
+// 		try {
+// 			const client = await getMongoClientPromise();
+// 			const dbName = process.env.DATABASE_NAME;
+// 			const db = client.db(dbName);
+
+// 			const originCity = typeof origin === "object" ? origin?.city : origin;
+// 			const originState = typeof origin === "object" ? origin?.state : undefined;
+// 			const destinationCity = typeof destination === "object" ? destination?.city : destination;
+// 			const destinationState = typeof destination === "object" ? destination?.state : undefined;
+
+// 			const match = {
+// 				...(originCity ? { "origin.city": originCity } : {}),
+// 				...(originState ? { "origin.state": originState } : {}),
+// 				...(destinationCity ? { "destination.city": destinationCity } : {}),
+// 				...(destinationState ? { "destination.state": destinationState } : {}),
+// 			};
+
+// 			const routes = await db.collection("shipments")
+// 				.find(match)
+// 				.sort({ "created_at.$date": -1 })
+// 				.limit(n)
+// 				.toArray();
+// 			return JSON.stringify(routes);
+// 		} catch (error) {
+// 			console.error("[retrieveRouteComplexity] Error:", error);
+// 			return JSON.stringify({
+// 				error: error.message || String(error),
+// 				routes: [],
+// 			});
+// 		}
+// 	},
+// 	{
+// 		name: "retrieve_route_complexity",
+// 		description: "Retrieve historical shipments for similar routes using the seeded shipments collection (origin/destination city/state).",
+// 		schema: {
+// 			type: "object",
+// 			properties: {
+// 				origin: {
+// 					type: ["object", "string"],
+// 					description: "Origin (object with city/state or string value).",
+// 				},
+// 				destination: {
+// 					type: ["object", "string"],
+// 					description: "Destination (object with city/state or string value).",
+// 				},
+// 				n: { type: "number", description: "Number of routes to return", default: 5 }
+// 			},
+// 			required: ["origin", "destination"],
+// 		},
+// 	}
+// );

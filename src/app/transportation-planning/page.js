@@ -209,7 +209,12 @@ export default function TransportationPlanningPage() {
         cost: selectedRoute.estimated_cost,
         time_hours: selectedRoute.estimated_time_hours,
         reliability_score: selectedRoute.reliability_score,
-        emissions_kg: selectedRoute.emissions_kg
+        emissions_kg: selectedRoute.emissions_kg,
+        // Include date information for contextual analysis
+        estimated_delivery: inheritedShipment.estimated_delivery || new Date().toISOString(),
+        created_at: inheritedShipment.created_at || new Date().toISOString(),
+        // Include shipment date if available
+        shipment_date: inheritedShipment.estimated_delivery?.$date || inheritedShipment.estimated_delivery || new Date().toISOString()
       }
       
       // Store selected route for Risk Analysis
