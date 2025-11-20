@@ -35,9 +35,9 @@ export default function RootCauseAnalysis() {
     
     // Store in sessionStorage for TP to pick up
     sessionStorage.setItem('inherited_shipment', JSON.stringify(shipmentData));
-    
-    // Navigate to Transportation Planning
-    router.push('/transportation-planning');
+
+    // Navigate to Supply Chain Planning
+    router.push('/supply-chain-planning');
   };
 
   return (
@@ -45,7 +45,7 @@ export default function RootCauseAnalysis() {
       <main className="flex flex-col w-full h-full">
         {/* Page Title & Subheader */}
         <div className="flex flex-col items-start justify-center px-6 py-4">
-          <H3 className="mb-1 text-left">Root Cause Analysis</H3>
+          <H3 className="mb-1 text-left">Disruption Analysis</H3>
           <Description className="text-left max-w-2xl mb-2">
             Analyze delayed shipments and generate detailed incident reports with AI-powered root cause analysis.
           </Description>

@@ -230,7 +230,7 @@ export default function TransportationPlanningPage() {
       <main className="flex flex-col w-full h-full">
         {/* Page Title & Subheader */}
         <div className="flex flex-col items-start justify-center px-6 py-4">
-          <H3 className="mb-1 text-left">Transportation Planning</H3>
+          <H3 className="mb-1 text-left">Supply Chain Planning</H3>
           <Description className="text-left max-w-2xl mb-2">
             Interactive logistics network visualization with AI-powered carrier optimization and route planning.
           </Description>
