@@ -15,11 +15,12 @@ import {
 } from "./tools.js";
 
 // Get available tools for risk analysis
+// TEMPORARILY: Start with just weather tool to debug tool display
 const tools = [
   retrieveWeatherEvents,
-  retrieveBorderIncidents,
-  retrieveCarrierPerformance,
-  retrieveRouteComplexity,
+  // retrieveBorderIncidents,
+  // retrieveCarrierPerformance,
+  // retrieveRouteComplexity,
 ];
 
 const toolNode = new ToolNode(tools);
@@ -35,7 +36,18 @@ export async function callModel(state, config) {
   const prompt = ChatPromptTemplate.fromMessages([
     [
       "system",
-      `You are a supply chain risk analysis expert.\n\nWhen analyzing a shipment's risk:\n1. Retrieve recent weather events for the route using retrieve_weather_events.\n2. Search for historical border crossing incidents using retrieve_border_incidents.\n3. Review carrier performance using retrieve_carrier_performance.\n4. Analyze route complexity using retrieve_route_complexity.\n\nIMPORTANT: You MUST use all relevant tools for every risk analysis.\nExplain your reasoning and suggest which risk factors should be adjusted, based on the data you find.\nBe concise but thorough in your analysis.`,
+      `You are a supply chain risk analysis expert.
+      
+      When analyzing route risk:
+      1. Extract the shipment date from route.estimated_delivery, route.shipment_date, or route.created_at
+      2. Use this date for all tool calls to get contextual, time-aware risk analysis
+      // 3. Call retrieve_weather_events
+      4. Analyze seasonal patterns (e.g., December = winter storms)
+      5. If you find high risks matching the shipment timeframe, recommend increasing the relevant weight slider
+      6. Consider the user's current risk factor weights (0-1 scale) when providing recommendations
+      
+      IMPORTANT: You MUST use all available tools to gather data before analyzing.
+      Be concise but thorough in your analysis.`,
     ],
     new MessagesPlaceholder("messages"),
   ]);

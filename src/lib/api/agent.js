@@ -1,10 +1,10 @@
-export async function callRiskAnalysisAgent(route, { onEvent } = {}) {
+export async function callRiskAnalysisAgent(route, { onEvent, weights } = {}) {
   // Use /api/chat for risk analysis agent
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      message: `Analyze risk for route:\n${JSON.stringify(route, null, 2)}`,
+      message: `Analyze risk for this route:\n${JSON.stringify({ route, weights }, null, 2)}`,
       agentId: "risk-analysis",
     }),
   });

@@ -5,12 +5,10 @@ import AgentStatus from "@/components/agentStatus/AgentStatus";
 import { H3, Description, Subtitle } from "@leafygreen-ui/typography";
 import Button from "@leafygreen-ui/button";
 import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider";
-import CardList from "@/components/cardList/CardList";
 import { useRiskAnalysis } from "./hooks";
 
 export default function RiskAnalysis() {
   const [selectedRouteData, setSelectedRouteData] = useState(null);
-  const [riskAnalysis, setRiskAnalysis] = useState(null);
 
   // Slider weights state (0-1)
   const [weights, setWeights] = useState({
@@ -32,16 +30,13 @@ export default function RiskAnalysis() {
     }
   }, []);
 
-      const {
-        availableRoutes,
-        selectedRouteId,
-        setSelectedRouteId,
-        agentActive,
-        riskReports,
-        agentLogs,
-        loadAvailableRoutes,
-        handleAnalyzeSelectedRoute,
-      } = useRiskAnalysis();
+  const {
+    agentActive,
+    agentLogs,
+    riskAnalysis,
+    loadAvailableRoutes,
+    handleAnalyzeSelectedRoute,
+  } = useRiskAnalysis();
 
       useEffect(() => {
         loadAvailableRoutes();
@@ -153,6 +148,14 @@ export default function RiskAnalysis() {
                       <div className="text-base font-bold text-black mt-1">Weight: {weights.borderCrossing.toFixed(2)}</div>
                   </div>
                 </div>
+                <Button
+                  variant="primary"
+                  disabled={!selectedRouteData || agentActive}
+                  onClick={() => handleAnalyzeSelectedRoute(selectedRouteData, weights)}
+                  className="w-full mt-6"
+                >
+                  {agentActive ? "Analyzing..." : "Run Risk Analysis"}
+                </Button>
               </div>
             </section>
           )}
@@ -174,14 +177,70 @@ export default function RiskAnalysis() {
             {/* Agent Output */}
             {riskAnalysis && (
               <div className="bg-gray-50 rounded-lg p-4 w-full text-left">
-                <div className="text-lg font-bold text-green-700 mb-2">Value at Risk (VaR): ${riskAnalysis.valueAtRisk.toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
-                <div className="text-base text-gray-700 mb-2">Weighted Risk: {(riskAnalysis.weightedRisk * 100).toFixed(2)}%</div>
-                <div className="text-left text-sm text-gray-600">
-                  <div><strong>Carrier Reliability Risk:</strong> {(riskAnalysis.factors.carrierReliability * 100).toFixed(2)}%</div>
-                  <div><strong>Route Complexity Risk:</strong> {(riskAnalysis.factors.routeComplexity * 100).toFixed(2)}%</div>
-                  <div><strong>Weather Patterns Risk:</strong> {(riskAnalysis.factors.weatherPatterns * 100).toFixed(2)}%</div>
-                  <div><strong>Border Crossing Risk:</strong> {(riskAnalysis.factors.borderCrossing * 100).toFixed(2)}%</div>
+                <div className="text-lg font-bold text-green-700 mb-2">
+                  Value at Risk (VaR): ${Number(riskAnalysis.valueAtRisk || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                 </div>
+                <div className="text-base text-gray-700 mb-2">
+                  Weighted Risk: {(riskAnalysis.weightedRisk * 100).toFixed(2)}%
+                </div>
+                <div className="text-sm text-gray-600 mb-3">
+                  {riskAnalysis.summary}
+                </div>
+                <div className="text-left text-sm text-gray-600 space-y-1">
+                  <div><strong>Carrier Reliability Risk:</strong> {(riskAnalysis.factors.carrierReliability.score * 100).toFixed(2)}% — {riskAnalysis.factors.carrierReliability.detail}</div>
+                  <div><strong>Route Complexity Risk:</strong> {(riskAnalysis.factors.routeComplexity.score * 100).toFixed(2)}% — {riskAnalysis.factors.routeComplexity.detail}</div>
+                  <div><strong>Weather Patterns Risk:</strong> {(riskAnalysis.factors.weatherPatterns.score * 100).toFixed(2)}% — {riskAnalysis.factors.weatherPatterns.detail}</div>
+                  <div><strong>Border Crossing Risk:</strong> {(riskAnalysis.factors.borderCrossing.score * 100).toFixed(2)}% — {riskAnalysis.factors.borderCrossing.detail}</div>
+                </div>
+                {riskAnalysis.weightRecommendations && (
+                  <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <Subtitle className="text-sm text-black mb-2 font-semibold">
+                      🎯 Suggested Weight Adjustments
+                    </Subtitle>
+                    <div className="space-y-2 text-sm">
+                      {Object.entries(riskAnalysis.weightRecommendations).map(([key, rec]) => {
+                        if (!rec || typeof rec.suggestedWeight !== 'number') return null;
+                        const currentWeight = weights[key] || 0;
+                        const diff = Math.abs(rec.suggestedWeight - currentWeight);
+                        if (diff < 0.05) return null; // Skip if already close
+                        return (
+                          <div key={key} className="flex items-center justify-between gap-2 p-2 bg-white rounded border border-blue-100">
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-800 capitalize">
+                                {key.replace(/([A-Z])/g, ' $1').trim()}
+                              </div>
+                              <div className="text-xs text-gray-600 mt-1">
+                                {rec.reason}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                Current: {currentWeight.toFixed(2)} → Suggested: {rec.suggestedWeight.toFixed(2)}
+                              </div>
+                            </div>
+                            <Button
+                              size="small"
+                              variant="primary"
+                              onClick={() => {
+                                setWeights(w => ({ ...w, [key]: rec.suggestedWeight }));
+                              }}
+                            >
+                              Apply
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {riskAnalysis.recommendations.length > 0 && (
+                  <div className="mt-3">
+                    <Subtitle className="text-sm text-black mb-1">Recommendations</Subtitle>
+                    <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                      {riskAnalysis.recommendations.map((rec, idx) => (
+                        <li key={idx}>{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
             {/* Empty State */}
