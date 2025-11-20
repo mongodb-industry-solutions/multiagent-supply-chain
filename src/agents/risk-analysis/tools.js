@@ -166,89 +166,140 @@ export const retrieveWeatherEvents = tool(
 	}
 );
 
-// // Query historical border incidents for the route
-// export const retrieveBorderIncidents = tool(
-// 	async ({ border, date, n = 5 }) => {
-// 		try {
-// 			const client = await getMongoClientPromise();
-// 			const dbName = process.env.DATABASE_NAME;
-// 			const db = client.db(dbName);
-			
-// 			// Normalize date for query
-// 			let queryDate = date;
-// 			if (date && typeof date === 'object' && date.$date) {
-// 				queryDate = date.$date;
-// 			} else if (date instanceof Date) {
-// 				queryDate = date.toISOString();
-// 			}
-			
-// 			const incidents = await db.collection("incidents")
-// 				.find({
-// 					type: "border",
-// 					border,
-// 					date: { $lte: queryDate }
-// 				})
-// 				.sort({ date: -1 })
-// 				.limit(n)
-// 				.toArray();
-// 			return JSON.stringify(incidents);
-// 		} catch (error) {
-// 			console.error("[retrieveBorderIncidents] Error:", error);
-// 			return JSON.stringify({
-// 				error: error.message || String(error),
-// 				incidents: [],
-// 			});
-// 		}
-// 	},
-// 	{
-// 		name: "retrieve_border_incidents",
-// 		description: "Retrieve recent border crossing incidents for a given border and date.",
-// 		schema: {
-// 			type: "object",
-// 			properties: {
-// 				border: { type: "string", description: "Border crossing name or code" },
-// 				date: { type: "string", description: "ISO date string" },
-// 				n: { type: "number", description: "Number of incidents to return", default: 5 }
-// 			},
-// 			required: ["border", "date"],
-// 		},
-// 	}
-// );
+export const extractWeightRecommendation = tool(
+	async ({ analysis, weightType }) => {
+		try {
+			const lines = analysis.split("\n");
+			for (const line of lines) {
+				const lowerLine = line.toLowerCase();
+				if (lowerLine.includes(weightType.toLowerCase()) && lowerLine.includes("increase")) {
+					return "increase";
+				}
+				if (lowerLine.includes(weightType.toLowerCase()) && lowerLine.includes("decrease")) {
+					return "decrease";
+				}
+			}
+			return "no_change";
+		} catch (error) {
+			console.error("[extractWeightRecommendation] Error:", error);
+			return "no_change";
+		}
+		
+	},
+	{
+		name: "extract_weight_recommendation",
+		description:
+			"Extract recommendation to increase, decrease, or make no change to a specific risk weight based on the analysis.",
+		schema: {
+			type: "object",
+			properties: {
+				analysis: {
+					type: "string",
+					description: "The risk analysis text to parse for recommendations.",
+				},
+				weightType: {
+					type: "string",
+					description: "The type of weight to check (e.g., 'weather', 'border delays').",
+				},
+			},
+			required: ["analysis", "weightType"],
+		},
+	}
+);
 
-// // Get carrier reliability history
-// export const retrieveCarrierPerformance = tool(
-// 	async ({ carrier, n = 5 }) => {
-// 		try {
-// 			const client = await getMongoClientPromise();
-// 			const dbName = process.env.DATABASE_NAME;
-// 			const db = client.db(dbName);
-// 			const shipments = await db.collection("shipments")
-// 				.find({ carrier })
-// 				.sort({ created_at: -1 })
-// 				.limit(n)
-// 				.toArray();
-// 			return JSON.stringify(shipments);
-// 		} catch (error) {
-// 			console.error("[retrieveCarrierPerformance] Error:", error);
-// 			return JSON.stringify({
-// 				error: error.message || String(error),
-// 				shipments: [],
-// 			});
-// 		}
-// 	},
-// 	{
-// 		name: "retrieve_carrier_performance",
-// 		description: "Retrieve recent shipment performance for a specific carrier.",
-// 		schema: {
-// 			type: "object",
-// 			properties: {
-// 				carrier: { type: "string", description: "Carrier name" },
-// 				n: { type: "number", description: "Number of shipments to return", default: 5 }
-// 			},
-// 			required: ["carrier"],
-// 		},
-// 	}
-// );
+// Query historical border incidents for the route
+export const retrieveBorderIncidents = tool(
+	async ({ border, date, n = 5 }) => {
+		try {
+			const client = await getMongoClientPromise();
+			const dbName = process.env.DATABASE_NAME;
+			const db = client.db(dbName);
+			
+			// Normalize date for query
+			let queryDate = date;
+			if (date && typeof date === 'object' && date.$date) {
+				queryDate = date.$date;
+			} else if (date instanceof Date) {
+				queryDate = date.toISOString();
+			}
+			
+			const incidents = await db.collection("incidents")
+				.find({
+					type: "border",
+					border,
+					date: { $lte: queryDate }
+				})
+				.sort({ date: -1 })
+				.limit(n)
+				.toArray();
+			return JSON.stringify(incidents);
+		} catch (error) {
+			console.error("[retrieveBorderIncidents] Error:", error);
+			return JSON.stringify({
+				error: error.message || String(error),
+				incidents: [],
+			});
+		}
+	},
+	{
+		name: "retrieve_border_incidents",
+		description: "Retrieve recent border crossing incidents for a given border and date.",
+		schema: {
+			type: "object",
+			name: {
+					type: "string",
+					description: "Name of the tool for identification purposes",
+					enum: ["retrieve_border_incidents"],
+				  },
+			properties: {
+				border: { type: "string", description: "Border crossing name or code" },
+				date: { type: "string", description: "ISO date string" },
+				n: { type: "number", description: "Number of incidents to return", default: 5 }
+			},
+			required: ["border", "date"],
+		},
+	}
+);
+
+// Get carrier reliability history
+export const retrieveCarrierPerformance = tool(
+	async ({ carrier, n = 5 }) => {
+		try {
+			const client = await getMongoClientPromise();
+			const dbName = process.env.DATABASE_NAME;
+			const db = client.db(dbName);
+			const shipments = await db.collection("shipments")
+				.find({ carrier })
+				.sort({ created_at: -1 })
+				.limit(n)
+				.toArray();
+			return JSON.stringify(shipments);
+		} catch (error) {
+			console.error("[retrieveCarrierPerformance] Error:", error);
+			return JSON.stringify({
+				error: error.message || String(error),
+				shipments: [],
+			});
+		}
+	},
+	{
+		name: "retrieve_carrier_performance",
+		description: "Retrieve recent shipment performance for a specific carrier.",
+		schema: {
+			type: "object",
+			name: {
+					type: "string",
+					description: "Name of the tool for identification purposes",
+					enum: ["retrieve_carrier_performance"],
+				  },
+			properties: {
+				carrier: { type: "string", description: "Carrier name" },
+				n: { type: "number", description: "Number of shipments to return", default: 5 }
+			},
+			required: ["carrier"],
+		},
+	}
+);
 
 // // Query historical data about similar route complexity
 // export const retrieveRouteComplexity = tool(

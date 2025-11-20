@@ -12,14 +12,15 @@ import {
   retrieveBorderIncidents,
   retrieveCarrierPerformance,
   retrieveRouteComplexity,
+  extractWeightRecommendation,
 } from "./tools.js";
 
 // Get available tools for risk analysis
 // TEMPORARILY: Start with just weather tool to debug tool display
 const tools = [
   retrieveWeatherEvents,
-  // retrieveBorderIncidents,
-  // retrieveCarrierPerformance,
+  retrieveBorderIncidents,
+  retrieveCarrierPerformance,
   // retrieveRouteComplexity,
 ];
 
@@ -39,13 +40,14 @@ export async function callModel(state, config) {
       `You are a supply chain risk analysis expert.
       
       When analyzing route risk:
-      1. Extract the shipment date from route.estimated_delivery, route.shipment_date, or route.created_at
-      2. Use this date for all tool calls to get contextual, time-aware risk analysis
-      // 3. Call retrieve_weather_events
-      4. Analyze seasonal patterns (e.g., December = winter storms)
-      5. If you find high risks matching the shipment timeframe, recommend increasing the relevant weight slider
-      6. Consider the user's current risk factor weights (0-1 scale) when providing recommendations
-      
+      1. First, extract the shipment date from route.estimated_delivery, route.shipment_date, or route.created_at.
+      2. Secondly, extract the shipment route origin and destination locations, from route.origin and route.destination.
+      3. Run the retrieve_weather_events tool to get relevant weather or seasonal events.
+      4. Run the retrieve_border_incidents tool to get relevant border incidents.
+      5. Run the retrieve_carrier_performance tool to get recent shipment performance for the carrier.
+      6. After running the tools, If you find high risks matching the shipment timeframe, recommend increasing the relevant weight slider and only if the value is below 0.8.
+      7. At the end of your recommendations, show a summary of your weight adjustment recommendations in a JSON format
+
       IMPORTANT: You MUST use all available tools to gather data before analyzing.
       Be concise but thorough in your analysis.`,
     ],

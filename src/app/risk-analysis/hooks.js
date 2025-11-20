@@ -168,6 +168,8 @@ export function useRiskAnalysis() {
       setRiskReports([]);
       setRiskAnalysis(null);
 
+      console.log("Analyzing route:", routeData, "with weights:", weights);
+
       try {
         setAgentLogs((prev) => [
           ...prev,
@@ -175,7 +177,9 @@ export function useRiskAnalysis() {
             type: "user",
             values: {
               content: `Starting risk analysis for selected route ${
-                routeData.id || routeData.route_id || "N/A"
+                routeData.route.origin.city || "N/A"
+              } → ${
+                routeData.route.destination.city || "N/A"
               }`,
             },
           },
@@ -195,19 +199,39 @@ export function useRiskAnalysis() {
           },
         });
 
+
+        // Extrae el bloque JSON de weights sugeridos del texto del agente
+        function extractWeightBlock(text) {
+          const match = text.match(/\{[^}]*\}/);
+          if (match) {
+            try {
+              return JSON.parse(match[0]);
+            } catch {
+              return null;
+            }
+          }
+          return null;
+        }
+
         const parsed = safeParseJson(agentResponse);
         const derivedFactors = deriveFactorDefaults(routeData);
         const mergedFactors = mergeFactorData(parsed?.factors, derivedFactors);
         const metrics = calculateRiskMetrics(mergedFactors, weights, routeData);
 
-        const summaryText =
-          parsed?.summary || "Risk analysis completed successfully.";
+        // Si el agente no devuelve parsed.summary, usa el texto completo
+        const summaryText = parsed?.summary || agentResponse || "Risk analysis completed successfully.";
+
+        // Busca el bloque JSON en el texto completo si no está en parsed
+        const weightBlock = parsed?.weightRecommendations || extractWeightBlock(agentResponse);
+
+        console.log("Risk analysis summary:", summaryText);
+        console.log("Suggested weights block:", weightBlock);
 
         setRiskAnalysis({
           ...metrics,
           summary: summaryText,
           recommendations: parsed?.recommendations || [],
-          weightRecommendations: parsed?.weightRecommendations || null,
+          weightRecommendations: weightBlock || null,
           factors: mergedFactors,
           weightsUsed: weights,
           rawResponse: parsed || agentResponse,
