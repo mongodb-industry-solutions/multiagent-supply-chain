@@ -1,6 +1,7 @@
 // Agent registry for multi-agent support
 import { createAgentGraph as createTestAgentGraph } from "./test/graph.js";
 // import { createAgentGraph as createSupervisorAgentGraph } from "./supervisor/graph.js";
+import { createAgentGraph as createRiskAnalysisAgentGraph } from "./risk-analysis/graph.js";
 import { createAgentGraph as createRootCauseAgentGraph } from "./root-cause-analysis/graph.js";
 import { createAgentGraph as createTransportationAgentGraph } from "./transportation/graph.js";
 
@@ -10,6 +11,13 @@ export const AGENTS = [
     name: "Test Agent",
     createGraph: createTestAgentGraph,
     description: "A simple test agent.",
+  },
+  {
+    id: "risk-analysis",
+    name: "Risk Analysis Agent",
+    createGraph: createRiskAnalysisAgentGraph,
+    description:
+      "Evaluates shipment risk using weather, border incidents, carrier history, and route complexity.",
   },
   // {
   //   id: "supervisor",

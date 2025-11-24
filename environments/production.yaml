@@ -9,5 +9,7 @@ envSecrets:
 
 serviceAccount:
   enabled: true
-  create: false # Don't create a new service account
-  name: irsa
+  irsa:
+    accountId: "275662791714"
+    roleName: "kanopy-staging-cicd-irsa"
+

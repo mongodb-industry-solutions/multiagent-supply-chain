@@ -13,8 +13,8 @@ export default function Navbar() {
   const [infoOpen, setInfoOpen] = useState(false);
   const navLinks = [
     { href: "/", label: "Demo Overview" },
-    { href: "/root-cause-analysis", label: "Root Cause Analysis" },
-    { href: "/transportation-planning", label: "Transportation Planning" },
+    { href: "/disruption-analysis", label: "Disruption Analysis" },
+    { href: "/supply-chain-planning", label: "Supply Chain Planning" },
     { href: "/risk-analysis", label: "Risk Analysis" },
     // { href: "/agent-sandbox", label: "Agent Sandbox" },
   ];

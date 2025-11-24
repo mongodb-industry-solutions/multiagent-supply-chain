@@ -209,7 +209,12 @@ export default function TransportationPlanningPage() {
         cost: selectedRoute.estimated_cost,
         time_hours: selectedRoute.estimated_time_hours,
         reliability_score: selectedRoute.reliability_score,
-        emissions_kg: selectedRoute.emissions_kg
+        emissions_kg: selectedRoute.emissions_kg,
+        // Include date information for contextual analysis
+        estimated_delivery: inheritedShipment.estimated_delivery || new Date().toISOString(),
+        created_at: inheritedShipment.created_at || new Date().toISOString(),
+        // Include shipment date if available
+        shipment_date: inheritedShipment.estimated_delivery?.$date || inheritedShipment.estimated_delivery || new Date().toISOString()
       }
       
       // Store selected route for Risk Analysis
@@ -225,7 +230,7 @@ export default function TransportationPlanningPage() {
       <main className="flex flex-col w-full h-full">
         {/* Page Title & Subheader */}
         <div className="flex flex-col items-start justify-center px-6 py-4">
-          <H3 className="mb-1 text-left">Transportation Planning</H3>
+          <H3 className="mb-1 text-left">Supply Chain Planning</H3>
           <Description className="text-left max-w-2xl mb-2">
             Interactive logistics network visualization with AI-powered carrier optimization and route planning.
           </Description>
@@ -324,7 +329,7 @@ export default function TransportationPlanningPage() {
                       onClick={handleAnalyzeRisk}
                       className="w-full"
                     >
-                      🎯 Analyze Risk for {selectedRoute.carrier}
+                      Analyze Risk for {selectedRoute.carrier}
                     </Button>
                   </div>
                 )}
