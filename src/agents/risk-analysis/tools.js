@@ -161,7 +161,7 @@ export const retrieveWeatherEvents = tool(
 					default: 5,
 				},
 			},
-			required: ["origin", "destination", "date"],
+			required: ["origin", "destination", "date", "name"],
 		},
 	}
 );
@@ -202,7 +202,7 @@ export const extractWeightRecommendation = tool(
 					description: "The type of weight to check (e.g., 'weather', 'border delays').",
 				},
 			},
-			required: ["analysis", "weightType"],
+			required: ["analysis", "weightType", "name"],
 		},
 	}
 );
@@ -256,7 +256,7 @@ export const retrieveBorderIncidents = tool(
 				date: { type: "string", description: "ISO date string" },
 				n: { type: "number", description: "Number of incidents to return", default: 5 }
 			},
-			required: ["border", "date"],
+			required: ["border", "date", "name"],
 		},
 	}
 );
@@ -296,7 +296,7 @@ export const retrieveCarrierPerformance = tool(
 				carrier: { type: "string", description: "Carrier name" },
 				n: { type: "number", description: "Number of shipments to return", default: 5 }
 			},
-			required: ["carrier"],
+			required: ["carrier", "name"],
 		},
 	}
 );
