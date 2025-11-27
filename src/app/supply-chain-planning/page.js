@@ -1,14 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { useRouter } from 'next/navigation'
 import Button from "@leafygreen-ui/button"
 import { H3, Description, Subtitle } from "@leafygreen-ui/typography"
 import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider"
 import AgentStatus from "@/components/agentStatus/AgentStatus"
 import CardList from "@/components/cardList/CardList"
-import { parseFallbackCarriers } from "@/lib/const/fallbackCarriers"
+import { useSupplyChainPlanning } from "./hooks"
 
 // Import LogisticsMap dynamically to avoid SSR issues with Leaflet
 const LogisticsMap = dynamic(() => import('../../components/logisticsMap/LogisticsMap'), {
@@ -24,206 +22,20 @@ const LogisticsMap = dynamic(() => import('../../components/logisticsMap/Logisti
 })
 
 export default function TransportationPlanningPage() {
-  const router = useRouter()
-  const [warehouses, setWarehouses] = useState([])
-  const [carriers, setCarriers] = useState([])
-  const [feasibleCarriers, setFeasibleCarriers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [inheritedShipment, setInheritedShipment] = useState(null)
-  const [agentActive, setAgentActive] = useState(false)
-  const [agentLogs, setAgentLogs] = useState([])
-  const [alternativeRoutes, setAlternativeRoutes] = useState([])
-  const [selectedRoute, setSelectedRoute] = useState(null)
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Check for inherited shipment from RCA
-        const shipmentData = sessionStorage.getItem('inherited_shipment')
-        if (shipmentData) {
-          const parsedShipment = JSON.parse(shipmentData)
-
-          
-          // Fetch complete shipment details from MongoDB if we have a shipment_id
-          if (parsedShipment.shipment_id) {
-            try {
-              const fullShipmentRes = await fetch(`/api/data?collection=shipments&filter={"shipment_id":"${parsedShipment.shipment_id}"}`)
-              const fullShipmentData = await fullShipmentRes.json()
-              
-              if (fullShipmentData && fullShipmentData.length > 0) {
-                // Merge RCA data (root_cause, delay_impact) with complete shipment data
-                const completeShipment = {
-                  ...fullShipmentData[0],
-                  root_cause: parsedShipment.root_cause,
-                  delay_impact: parsedShipment.delay_impact
-                }
-                setInheritedShipment(completeShipment)
-
-              } else {
-                // Fallback to RCA data only if full shipment not found
-                setInheritedShipment(parsedShipment)
-              }
-            } catch (error) {
-              console.error('Error fetching complete shipment:', error)
-              setInheritedShipment(parsedShipment)
-            }
-          } else {
-            setInheritedShipment(parsedShipment)
-          }
-        }
-        
-        // Fetch warehouses
-        const warehousesRes = await fetch('/api/data?collection=warehouses')
-        const warehousesData = await warehousesRes.json()
-        
-        // Fetch carriers
-        const carriersRes = await fetch('/api/data?collection=carriers')
-        const carriersData = await carriersRes.json()
-        
-        setWarehouses(warehousesData)
-        setCarriers(carriersData)
-      } catch (error) {
-        console.error('Error fetching data:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [])
-
-  // Function to fetch full carrier data for feasible carriers
-  const fetchFeasibleCarrierData = async (carrierNames) => {
-    try {
-      const carrierPromises = carrierNames.map(async (carrierName) => {
-        const response = await fetch(`/api/data?collection=carriers&filter={"name":"${carrierName}"}`)
-        const carrierData = await response.json()
-        return carrierData.length > 0 ? carrierData[0] : null
-      })
-      
-      const feasibleCarrierData = await Promise.all(carrierPromises)
-      const validCarriers = feasibleCarrierData.filter(carrier => carrier !== null)
-      console.log('Fetched feasible carriers data:', validCarriers)
-      setFeasibleCarriers(validCarriers)
-    } catch (error) {
-      console.error('Error fetching feasible carrier data:', error)
-    }
-  }
-
-  const handleFindAlternatives = async () => {
-    if (!inheritedShipment) return
-    
-    setAgentActive(true)
-    setAgentLogs([])
-    setAlternativeRoutes([])
-    
-    try {
-      console.log('Finding alternative routes for shipment:', inheritedShipment.shipment_id)
-      
-      setAgentLogs(prev => [...prev, {
-        type: "user",
-        values: {
-          content: `Finding alternative routes for delayed shipment ${inheritedShipment.shipment_id}\nOriginal carrier: ${inheritedShipment.carrier}\nRoot cause: ${inheritedShipment.root_cause}`
-        }
-      }])
-      
-      // Call Transportation Planning Agent with real geospatial tools
-      const response = await fetch('/api/agent/transportation-planning', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          shipmentData: inheritedShipment 
-        })
-      })
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
-      const result = await response.json()
-      
-      if (result.success) {
-        setAgentLogs(prev => [...prev, {
-          type: "final",
-          values: {
-            content: result.agent_response
-          }
-        }])
-        
-        // Use structured alternatives from the format_alternatives tool
-        if (result.alternatives && result.alternatives.length > 0) {
-          console.log('Using structured alternatives from agent:', result.alternatives);
-          setAlternativeRoutes(result.alternatives);
-          
-          // Extract carrier names and fetch their full data
-          const carrierNames = result.alternatives.map(alt => alt.carrier);
-          await fetchFeasibleCarrierData(carrierNames);
-        } else {
-          // Fallback: parse from text if no structured data available
-          const agentText = result.agent_response;
-          const alternativeRoutes = parseFallbackCarriers(agentText);
-          
-          setAlternativeRoutes(alternativeRoutes)
-          
-          // Extract carrier names and fetch their full data for fallback routes too
-          const carrierNames = alternativeRoutes.map(alt => alt.carrier);
-          await fetchFeasibleCarrierData(carrierNames);
-        }
-      } else {
-        throw new Error(result.error || 'Unknown error occurred')
-      }
-      
-      setAgentActive(false)
-      
-    } catch (error) {
-      console.error("Error finding alternatives:", error)
-      setAgentLogs(prev => [...prev, {
-        type: "error",
-        values: {
-          content: `Error: ${error.message}`
-        }
-      }])
-      setAgentActive(false)
-    }
-  }
-
-  // Handle route selection
-  const handleRouteSelection = (selectedId) => {
-    const route = alternativeRoutes.find(r => r.id === selectedId)
-
-    setSelectedRoute(route)
-  }
-
-  // Navigate to Risk Analysis with selected route
-  const handleAnalyzeRisk = () => {
-    if (selectedRoute && inheritedShipment) {
-      const riskAnalysisData = {
-        carrier: selectedRoute.carrier,
-        route: {
-          origin: inheritedShipment.origin,
-          destination: inheritedShipment.destination
-        },
-        shipment_id: inheritedShipment.shipment_id,
-        cost: selectedRoute.estimated_cost,
-        time_hours: selectedRoute.estimated_time_hours,
-        reliability_score: selectedRoute.reliability_score,
-        emissions_kg: selectedRoute.emissions_kg,
-        // Include date information for contextual analysis
-        estimated_delivery: inheritedShipment.estimated_delivery || new Date().toISOString(),
-        created_at: inheritedShipment.created_at || new Date().toISOString(),
-        // Include shipment date if available
-        shipment_date: inheritedShipment.estimated_delivery?.$date || inheritedShipment.estimated_delivery || new Date().toISOString()
-      }
-      
-      // Store selected route for Risk Analysis
-      sessionStorage.setItem('selected_route_for_risk', JSON.stringify(riskAnalysisData))
-      
-      // Navigate to Risk Analysis
-      router.push('/risk-analysis')
-    }
-  }
+  const {
+    warehouses,
+    carriers,
+    feasibleCarriers,
+    loading,
+    inheritedShipment,
+    agentActive,
+    agentLogs,
+    alternativeRoutes,
+    selectedRoute,
+    handleFindAlternatives,
+    handleRouteSelection,
+    handleAnalyzeRisk,
+  } = useSupplyChainPlanning()
 
   return (
     <LeafyGreenProvider baseFontSize={16}>

@@ -83,3 +83,25 @@ export async function callRootCauseAgent(shipment, { onEvent } = {}) {
   }
   return fullText;
 }
+
+export async function callTransportationPlanningAgent(shipment, { onEvent } = {}) {
+  // Use /api/chat for transportation planning agent
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: `Find alternative routes for delayed shipment:\n${JSON.stringify(shipment, null, 2)}`,
+      agentId: "transportation-planning",
+    }),
+  });
+  if (!response.body) throw new Error("No response body");
+  let fullText = "";
+  for await (const evt of streamAgentEvents(response.body)) {
+    if (onEvent) onEvent(evt);
+    if (evt.type === "update" || evt.type === "final") {
+      fullText += evt.values?.content || "";
+    }
+    // handle errors or other event types as needed
+  }
+  return fullText;
+}
