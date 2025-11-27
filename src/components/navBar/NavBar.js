@@ -73,7 +73,7 @@ export default function Navbar() {
         </div>
 
         {/* InfoWizard absolutely positioned in the top-right corner to mirror the logo on the left */}
-        <div className="absolute right-0 top-0 pr-5 pt-2">
+        {/* <div className="absolute right-0 top-0 pr-5 pt-2">
           <div className="flex items-center">
             <InfoWizard
               open={infoOpen}
@@ -81,7 +81,7 @@ export default function Navbar() {
               sections={TALK_TRACK}
             />
           </div>
-        </div>
+        </div> */}
       </nav>
     </LeafyGreenProvider>
   );
