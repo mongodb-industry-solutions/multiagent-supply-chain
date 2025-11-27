@@ -62,24 +62,33 @@ export default function RiskAnalysis() {
         <div className="flex flex-1 min-h-0 w-full gap-6 px-6 pb-4">
           {/* Panel 1: Selected Route Info */}
           {selectedRouteData && (
-            <section className="flex flex-col w-1/2 border border-gray-200 rounded-xl bg-white p-4">
-              {/* ...existing code for route details and sliders... */}
-              <div className="space-y-2 text-lg font-semibold text-black bg-white p-4 rounded-lg mb-4">
-                <Subtitle className="mb-3 text-black">Selected Route</Subtitle>
-                <div><strong>Carrier:</strong> {selectedRouteData.carrier}</div>
-                <div><strong>Origin:</strong> {selectedRouteData.route.origin.city}, {selectedRouteData.route.origin.state}</div>
-                <div><strong>Destination:</strong> {selectedRouteData.route.destination.city}, {selectedRouteData.route.destination.state}</div>
-                <div><strong>Estimated Cost:</strong> ${Number(selectedRouteData.cost).toLocaleString()}</div>
-                <div><strong>Transit Time:</strong> {selectedRouteData.time_hours} hours</div>
-                <div><strong>Reliability:</strong> {(
-                  selectedRouteData.reliability_score > 1
-                    ? selectedRouteData.reliability_score
-                    : selectedRouteData.reliability_score * 100
-                ).toFixed(2)}%</div>
-              </div>
-              <div className="mt-2 p-4 rounded-lg bg-white">
-                <Subtitle className="mb-2 text-gray-800">Risk Factor Weights</Subtitle>
-                <div className="space-y-4">
+            <section className="flex flex-col w-1/2 border border-gray-200 rounded-xl bg-white p-4 overflow-y-auto">
+              {/* Route Details and Sliders - Side by side on desktop, stacked on mobile */}
+              <div className="flex flex-col md:flex-row gap-4 mb-4">
+                {/* Route Details - Left side on desktop */}
+                <div className="flex-1 space-y-2 text-lg font-semibold text-black bg-white p-4 rounded-lg">
+                  <div className="mb-4">
+                    <Subtitle className="text-black">Selected Route</Subtitle>
+                  </div>
+                  <div><strong>Carrier:</strong> {selectedRouteData.carrier}</div>
+                  <div><strong>Origin:</strong> {selectedRouteData.route.origin.city}, {selectedRouteData.route.origin.state}</div>
+                  <div><strong>Destination:</strong> {selectedRouteData.route.destination.city}, {selectedRouteData.route.destination.state}</div>
+                  <div><strong>Estimated Cost:</strong> ${Number(selectedRouteData.cost).toLocaleString()}</div>
+                  <div><strong>Transit Time:</strong> {selectedRouteData.time_hours} hours</div>
+                  <div><strong>Reliability:</strong> {(
+                    selectedRouteData.reliability_score > 1
+                      ? selectedRouteData.reliability_score
+                      : selectedRouteData.reliability_score * 100
+                  ).toFixed(2)}%</div>
+                </div>
+                
+                {/* Risk Factor Weights - Right side on desktop */}
+                <div className="flex-1 p-4 rounded-lg bg-white">
+                  <div className="mb-4">
+                    <Subtitle className="text-black">Risk Factor Weights</Subtitle>
+                  </div>
+             
+                  <div className="space-y-4">
                   {/* ...existing code for sliders... */}
                   <div>
                     <label htmlFor="carrierReliability" className="block text-sm font-medium text-gray-700">Carrier Reliability</label>
@@ -153,16 +162,19 @@ export default function RiskAnalysis() {
                     </div>
                       <div className="text-base font-bold text-black mt-1">Weight: {weights.borderCrossing.toFixed(2)}</div>
                   </div>
+                  </div>
                 </div>
-                <Button
-                  variant="primary"
-                  disabled={!selectedRouteData || agentActive}
-                  onClick={() => handleAnalyzeSelectedRoute(selectedRouteData, weights)}
-                  className="w-full mt-6"
-                >
-                  {agentActive ? "Analyzing..." : "Run Risk Analysis"}
-                </Button>
               </div>
+              
+              {/* Run Risk Analysis Button */}
+              <Button
+                variant="primary"
+                disabled={!selectedRouteData || agentActive}
+                onClick={() => handleAnalyzeSelectedRoute(selectedRouteData, weights)}
+                className="w-full"
+              >
+                {agentActive ? "Analyzing..." : "Run Risk Analysis"}
+              </Button>
             </section>
           )}
 

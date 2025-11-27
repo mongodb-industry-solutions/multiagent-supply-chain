@@ -14,7 +14,7 @@ export default function Page() {
       {/* Image Section */}
       <div className="relative flex-grow w-full flex items-center justify-center min-h-[180px] mb-2">
         <Image
-          src="/img/architecture_diagram.svg"
+          src="/img/architecture_diagram.png"
           alt="Predictive Maintenance Demo"
           fill
           className="object-contain w-full h-full"
