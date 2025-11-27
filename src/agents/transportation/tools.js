@@ -130,98 +130,174 @@ export const findNearestCarriersTool = tool(
  * Tool to validate if carriers can serve a specific location (within their service area)
  * Uses geospatial intersection to check if location is within carrier service polygons
  */
-export const validateServiceCoverageTool = tool(
-  async ({ longitude, latitude, includePerformanceAnalysis = true }) => {
-    try {
-      console.log(`Validating service coverage for location [${longitude}, ${latitude}]`);
-      
-      // Call our geospatial function that uses $geoIntersects
-      const availableCarriers = await findCarriersForLocation(longitude, latitude);
-      
-      if (availableCarriers.length === 0) {
-        return JSON.stringify({
-          location: { longitude, latitude },
-          serviceAvailable: false,
-          carriersWithCoverage: 0,
-          message: "No carriers serve this location within their defined service areas",
-          recommendation: "Consider expanding search radius or using nearest carrier analysis"
-        });
-      }
-      
-      // Analyze carrier options
-      const carrierAnalysis = availableCarriers.map(carrier => {
-        const analysis = {
-          name: carrier.name,
-          carrier_id: carrier.carrier_id,
-          serviceAreas: carrier.service_areas || [],
-          headquarters: {
-            city: carrier.headquarters.city,
-            state: carrier.headquarters.state,
-            country: carrier.headquarters.country
-          },
-          fleet: {
-            total_vehicles: carrier.fleet.total_vehicles,
-            capacity_per_vehicle_kg: carrier.fleet.capacity_per_vehicle_kg
-          },
-          specialties: carrier.specialties || []
-        };
-        
-        if (includePerformanceAnalysis) {
-          analysis.performance = {
-            cost_per_mile: carrier.performance_metrics.cost_per_mile,
-            emissions_kg_per_mile: carrier.performance_metrics.emission_factor_kg_co2_per_mile,
-            reliability_score: carrier.performance_metrics.reliability_score,
-            on_time_delivery_rate: carrier.performance_metrics.on_time_delivery_rate,
-            average_delivery_time_hours: carrier.performance_metrics.average_delivery_time_hours
-          };
-        }
-        
-        return analysis;
-      });
-      
-      // Find best options by different criteria
-      const bestByCost = [...carrierAnalysis].sort((a, b) => 
-        a.performance.cost_per_mile - b.performance.cost_per_mile
-      )[0];
-      
-      const bestByEmissions = [...carrierAnalysis].sort((a, b) => 
-        a.performance.emissions_kg_per_mile - b.performance.emissions_kg_per_mile
-      )[0];
-      
-      const bestByReliability = [...carrierAnalysis].sort((a, b) => 
-        b.performance.reliability_score - a.performance.reliability_score
-      )[0];
-      
-      const response = {
-        location: { longitude, latitude },
-        serviceAvailable: true,
-        carriersWithCoverage: availableCarriers.length,
-        carriers: carrierAnalysis,
-        recommendations: {
-          mostCostEffective: bestByCost ? {
-            name: bestByCost.name,
-            cost_per_mile: bestByCost.performance.cost_per_mile
-          } : null,
-          mostEcoFriendly: bestByEmissions ? {
-            name: bestByEmissions.name,
-            emissions_kg_per_mile: bestByEmissions.performance.emissions_kg_per_mile
-          } : null,
-          mostReliable: bestByReliability ? {
-            name: bestByReliability.name,
-            reliability_score: bestByReliability.performance.reliability_score
-          } : null
-        }
-      };
-      
-      return JSON.stringify(response, null, 2);
-      
-    } catch (error) {
-      console.error('Error in validateServiceCoverageTool:', error);
+// Shared helper function for validating service coverage
+async function validateServiceCoverageHelper({ longitude, latitude, includePerformanceAnalysis = true }) {
+  try {
+    console.log(`Validating service coverage for location [${longitude}, ${latitude}]`);
+    
+    // Call our geospatial function that uses $geoIntersects
+    const availableCarriers = await findCarriersForLocation(longitude, latitude);
+    
+    if (availableCarriers.length === 0) {
       return JSON.stringify({
-        error: `Failed to validate service coverage: ${error.message}`,
-        location: { longitude, latitude }
+        location: { longitude, latitude },
+        serviceAvailable: false,
+        carriersWithCoverage: 0,
+        message: "No carriers serve this location within their defined service areas",
+        recommendation: "Consider expanding search radius or using nearest carrier analysis"
       });
     }
+    
+    // Analyze carrier options
+    const carrierAnalysis = availableCarriers.map(carrier => {
+      const analysis = {
+        name: carrier.name,
+        carrier_id: carrier.carrier_id,
+        serviceAreas: carrier.service_areas || [],
+        headquarters: {
+          city: carrier.headquarters.city,
+          state: carrier.headquarters.state,
+          country: carrier.headquarters.country
+        },
+        fleet: {
+          total_vehicles: carrier.fleet.total_vehicles,
+          capacity_per_vehicle_kg: carrier.fleet.capacity_per_vehicle_kg
+        },
+        specialties: carrier.specialties || []
+      };
+      
+      if (includePerformanceAnalysis) {
+        analysis.performance = {
+          cost_per_mile: carrier.performance_metrics.cost_per_mile,
+          emissions_kg_per_mile: carrier.performance_metrics.emission_factor_kg_co2_per_mile,
+          reliability_score: carrier.performance_metrics.reliability_score,
+          on_time_delivery_rate: carrier.performance_metrics.on_time_delivery_rate,
+          average_delivery_time_hours: carrier.performance_metrics.average_delivery_time_hours
+        };
+      }
+      
+      return analysis;
+    });
+    
+    // Find best options by different criteria
+    const bestByCost = [...carrierAnalysis].sort((a, b) => 
+      a.performance.cost_per_mile - b.performance.cost_per_mile
+    )[0];
+    
+    const bestByEmissions = [...carrierAnalysis].sort((a, b) => 
+      a.performance.emissions_kg_per_mile - b.performance.emissions_kg_per_mile
+    )[0];
+    
+    const bestByReliability = [...carrierAnalysis].sort((a, b) => 
+      b.performance.reliability_score - a.performance.reliability_score
+    )[0];
+    
+    const response = {
+      location: { longitude, latitude },
+      serviceAvailable: true,
+      carriersWithCoverage: availableCarriers.length,
+      carriers: carrierAnalysis,
+      recommendations: {
+        mostCostEffective: bestByCost ? {
+          name: bestByCost.name,
+          cost_per_mile: bestByCost.performance.cost_per_mile
+        } : null,
+        mostEcoFriendly: bestByEmissions ? {
+          name: bestByEmissions.name,
+          emissions_kg_per_mile: bestByEmissions.performance.emissions_kg_per_mile
+        } : null,
+        mostReliable: bestByReliability ? {
+          name: bestByReliability.name,
+          reliability_score: bestByReliability.performance.reliability_score
+        } : null
+      }
+    };
+    
+    return JSON.stringify(response, null, 2);
+    
+  } catch (error) {
+    console.error('Error in validateServiceCoverageHelper:', error);
+    return JSON.stringify({
+      error: `Failed to validate service coverage: ${error.message}`,
+      location: { longitude, latitude }
+    });
+  }
+}
+
+// Tool for validating origin location coverage
+export const validateServiceCoverageOriginTool = tool(
+  async ({ longitude, latitude, includePerformanceAnalysis = true }) => {
+    return await validateServiceCoverageHelper({ longitude, latitude, includePerformanceAnalysis });
+  },
+  {
+    name: "validate_service_coverage_origin",
+    description: "Validate if carriers can serve the ORIGIN location by checking if the origin falls within their defined service areas. Returns carriers with coverage and performance analysis for the origin point.",
+    schema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Name of the tool for identification purposes",
+          enum: ["validate_service_coverage_origin"],
+        },
+        longitude: {
+          type: "number",
+          description: "Longitude of the ORIGIN location to validate (-180 to 180)",
+        },
+        latitude: {
+          type: "number",
+          description: "Latitude of the ORIGIN location to validate (-90 to 90)",
+        },
+        includePerformanceAnalysis: {
+          type: "boolean",
+          description: "Whether to include detailed performance metrics in the analysis (default: true)",
+          default: true
+        }
+      },
+      required: ["name", "longitude", "latitude"],
+    },
+  }
+);
+
+// Tool for validating destination location coverage
+export const validateServiceCoverageDestinationTool = tool(
+  async ({ longitude, latitude, includePerformanceAnalysis = true }) => {
+    return await validateServiceCoverageHelper({ longitude, latitude, includePerformanceAnalysis });
+  },
+  {
+    name: "validate_service_coverage_destination",
+    description: "Validate if carriers can serve the DESTINATION location by checking if the destination falls within their defined service areas. Returns carriers with coverage and performance analysis for the destination point.",
+    schema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Name of the tool for identification purposes",
+          enum: ["validate_service_coverage_destination"],
+        },
+        longitude: {
+          type: "number",
+          description: "Longitude of the DESTINATION location to validate (-180 to 180)",
+        },
+        latitude: {
+          type: "number",
+          description: "Latitude of the DESTINATION location to validate (-90 to 90)",
+        },
+        includePerformanceAnalysis: {
+          type: "boolean",
+          description: "Whether to include detailed performance metrics in the analysis (default: true)",
+          default: true
+        }
+      },
+      required: ["name", "longitude", "latitude"],
+    },
+  }
+);
+
+// Keep the original tool for backward compatibility (can be removed later if not needed)
+export const validateServiceCoverageTool = tool(
+  async ({ longitude, latitude, includePerformanceAnalysis = true }) => {
+    return await validateServiceCoverageHelper({ longitude, latitude, includePerformanceAnalysis });
   },
   {
     name: "validate_service_coverage",
