@@ -43,7 +43,7 @@ export function useCardList(
           const delayHours = item.delay_hours || item.delay || 0;
           return {
             title: `${item.shipment_id || "Unknown Shipment"} - ${item.carrier || "Unknown Carrier"}`,
-            flagText: `${delayHours}h delayed`,
+            flagText: delayHours > 0 ? `${delayHours}h delayed` : undefined,
             description: `From ${originText} to ${destinationText}`,
             icon: "Warning",
             iconColor: "#FF6B00",
