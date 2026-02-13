@@ -46,3 +46,6 @@ policy.json
 task-def.json
 Makefile
 third-party-licenses.json
+
+# AI instructions
+.github/copilot-instructions.md
