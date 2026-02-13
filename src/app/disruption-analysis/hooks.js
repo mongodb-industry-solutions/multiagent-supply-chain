@@ -11,6 +11,7 @@ export function useRootCauseAnalysis() {
   const [agentActive, setAgentActive] = useState(false);
   const [incidentReports, setIncidentReports] = useState([]);
   const [agentLogs, setAgentLogs] = useState([]);
+  const [qaReports, setQaReports] = useState([]);
 
   // Start simulation - fetch delayed shipments
   const handleStartSimulation = useCallback(async () => {
@@ -29,6 +30,8 @@ export function useRootCauseAnalysis() {
       // Clear UI state
       setIncidentReports([]);
       setAgentLogs([]);
+      setQaReports([]);
+      setQaReports([]);
       
       // Fetch delayed shipments from API
       const response = await fetch('/api/shipments?status=delayed');
@@ -63,6 +66,7 @@ export function useRootCauseAnalysis() {
     setSelectedShipmentId(null);
     setIncidentReports([]);
     setAgentLogs([]);
+    setQaReports([]);
   }, []);
 
   // Analyze selected shipment only
@@ -75,6 +79,8 @@ export function useRootCauseAnalysis() {
     setAgentActive(true);
     setAgentLogs([]);
     setIncidentReports([]);
+    setQaReports([]);
+    setQaReports([]);
     
     try {
       // Clear previous incident reports
@@ -98,6 +104,21 @@ export function useRootCauseAnalysis() {
         onEvent: (evt) => {
           if (evt.type === "update" || evt.type === "tool_start" || evt.type === "tool_end") {
             setAgentLogs(prev => [...prev, evt]);
+            
+            // Capture QA reports from tool_end events
+            if (evt.type === "update" && evt.name === "tool_end") {
+              console.log('Tool end event received:', JSON.stringify(evt, null, 2));
+              const toolData = evt.values?.kwargs;
+              if (toolData && toolData.name === "retrieve_qa_reports") {
+                try {
+                  const reports = JSON.parse(toolData.content);
+                  setQaReports(reports);
+                  console.log('Captured QA Reports:', reports);
+                } catch (error) {
+                  console.error('Failed to parse QA reports:', error);
+                }
+              }
+            }
           } else if (evt.type === "final") {
             setAgentLogs(prev => [...prev, evt]);
           } else if (evt.type === "error") {
@@ -134,6 +155,7 @@ export function useRootCauseAnalysis() {
     agentActive,
     incidentReports,
     agentLogs,
+    qaReports,
     
     // Actions
     handleStartSimulation,

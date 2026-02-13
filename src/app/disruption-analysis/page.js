@@ -1,15 +1,19 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import Button from "@leafygreen-ui/button";
 import { H3, Description } from "@leafygreen-ui/typography";
 import { useRouter } from "next/navigation";
 import AgentStatus from "@/components/agentStatus/AgentStatus";
 import CardList from "@/components/cardList/CardList";
 import LeafyGreenProvider from "@leafygreen-ui/leafygreen-provider";
+import Modal from "@leafygreen-ui/modal";
+import Code from "@leafygreen-ui/code";
 import { useRootCauseAnalysis } from "./hooks";
 
 export default function RootCauseAnalysis() {
   const router = useRouter();
+  const [showQAModal, setShowQAModal] = useState(false);
+  
   const {
     isSimulationRunning,
     delayedShipments,
@@ -21,6 +25,7 @@ export default function RootCauseAnalysis() {
     handleStartSimulation,
     handleStopSimulation,
     handleAnalyzeSelectedShipment,
+    qaReports,
   } = useRootCauseAnalysis();
 
   // Navigate to Transportation Planning with inherited shipment
@@ -121,7 +126,16 @@ export default function RootCauseAnalysis() {
             <div className="flex flex-1 min-h-0 overflow-hidden flex-col">
               {/* Transportation Planning Button */}
               {incidentReports.length > 0 && (
-                <div className="flex justify-end mb-2 flex-shrink-0">
+                <div className="flex justify-end gap-2 mb-2 flex-shrink-0">
+                  {qaReports.length > 0 && (
+                    <Button
+                      variant="default"
+                      size="small"
+                      onClick={() => setShowQAModal(true)}
+                    >
+                      View QA Reports
+                    </Button>
+                  )}
                   <Button
                     variant="primary"
                     size="small"
@@ -143,6 +157,32 @@ export default function RootCauseAnalysis() {
             </div>
           </section>
         </div>
+        
+        {/* QA Reports Modal */}
+        <Modal
+          open={showQAModal}
+          setOpen={setShowQAModal}
+          size="large"
+        >
+          <H3 className="mb-4">QA Reports Used in Analysis</H3>
+          <Description className="mb-4">
+            These are the quality assurance reports retrieved by the agent using vector search to identify patterns and root causes.
+          </Description>
+          <div className="max-h-[600px] overflow-y-auto mt-4 space-y-4">
+            {qaReports.map((report, index) => (
+              <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <div className="mb-2 flex justify-between items-center">
+                  <span className="font-semibold text-lg text-gray-600">
+                    QA Report #{index + 1}
+                  </span>
+                </div>
+                <p className="text-md text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {report.text}
+                </p>
+              </div>
+            ))}
+          </div>
+        </Modal>
       </main>
     </LeafyGreenProvider>
   );
