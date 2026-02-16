@@ -147,6 +147,7 @@ export function useRiskAnalysis() {
   const [riskReports, setRiskReports] = useState([]);
   const [agentLogs, setAgentLogs] = useState([]);
   const [riskAnalysis, setRiskAnalysis] = useState(null);
+  const [currentThreadId, setCurrentThreadId] = useState(null); // Track persistent thread ID
 
   // Load available routes (replace with real API if needed)
   const loadAvailableRoutes = useCallback(async () => {
@@ -156,6 +157,13 @@ export function useRiskAnalysis() {
       const parsed = JSON.parse(routeData);
       setAvailableRoutes([parsed]);
       setSelectedRouteId(parsed.id || null);
+      
+      // Generate a persistent thread ID based on route details
+      // This ensures the same route always uses the same conversation thread
+      const routeSignature = `${parsed.carrier}-${parsed.route.origin.city}-${parsed.route.destination.city}`;
+      const threadId = `risk-${routeSignature.replace(/\s+/g, '-').toLowerCase()}`;
+      setCurrentThreadId(threadId);
+      console.log(`🔗 Using persistent threadId: ${threadId}`);
     }
   }, []);
 
@@ -187,6 +195,7 @@ export function useRiskAnalysis() {
 
         const agentResponse = await callRiskAnalysisAgent(routeData, {
           weights,
+          threadId: currentThreadId, // Pass persistent thread ID
           onEvent: (evt) => {
             // Simplified event handling - match root cause analysis pattern exactly
             if (evt.type === "update" || evt.type === "tool_start" || evt.type === "tool_end") {
@@ -262,7 +271,7 @@ export function useRiskAnalysis() {
         setAgentActive(false);
       }
     },
-    []
+    [currentThreadId]
   );
 
   return {

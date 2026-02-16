@@ -12,7 +12,7 @@ export default function RiskAnalysis() {
 
   // Slider weights state (0-1)
   const [weights, setWeights] = useState({
-    carrierReliability: 0.8,
+    carrierReliability: 0.4,
     routeComplexity: 0.6,
     weatherPatterns: 0.5,
     borderCrossing: 0.7,
@@ -26,6 +26,7 @@ export default function RiskAnalysis() {
 
       console.log("Retrieved route data for risk analysis:", routeData);
       const parsedData = JSON.parse(routeData);
+      console.log("Parsed route data:", parsedData);
 
       setSelectedRouteData(parsedData);
     }
@@ -77,9 +78,9 @@ export default function RiskAnalysis() {
                   <div><strong>Transit Time:</strong> {selectedRouteData.time_hours} hours</div>
                   <div><strong>Reliability:</strong> {(
                     selectedRouteData.reliability_score > 1
-                      ? selectedRouteData.reliability_score
+                      ? selectedRouteData.reliability_score * 10
                       : selectedRouteData.reliability_score * 100
-                  ).toFixed(2)}%</div>
+                  ).toFixed(1)}%</div>
                 </div>
                 
                 {/* Risk Factor Weights - Right side on desktop */}

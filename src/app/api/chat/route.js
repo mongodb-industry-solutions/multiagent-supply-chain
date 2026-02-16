@@ -3,8 +3,9 @@ import { handleChatRequestStream } from "@/agents/callAgent.js";
 
 export async function POST(request) {
   // Streaming response using ReadableStream
-  const { message, agentId } = await request.json();
-  const threadId = Date.now().toString();
+  const { message, agentId, threadId: clientThreadId } = await request.json();
+  // Use client-provided threadId if available, otherwise generate a new one
+  const threadId = clientThreadId || Date.now().toString();
 
   const stream = new ReadableStream({
     async start(controller) {
