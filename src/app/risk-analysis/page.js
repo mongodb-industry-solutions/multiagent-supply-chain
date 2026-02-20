@@ -12,7 +12,7 @@ export default function RiskAnalysis() {
 
   // Slider weights state (0-1)
   const [weights, setWeights] = useState({
-    carrierReliability: 0.4,
+    carrierReliability: 0.8,
     routeComplexity: 0.6,
     weatherPatterns: 0.5,
     borderCrossing: 0.7,
@@ -92,7 +92,7 @@ export default function RiskAnalysis() {
                   <div className="space-y-4">
                   {/* ...existing code for sliders... */}
                   <div>
-                    <label htmlFor="carrierReliability" className="block text-sm font-medium text-gray-700">Carrier Reliability</label>
+                    <label htmlFor="carrierReliability" className="block text-md font-medium text-gray-700">Carrier Reliability</label>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-black">0</span>
                       <input
@@ -107,10 +107,10 @@ export default function RiskAnalysis() {
                       />
                         <span className="text-sm font-semibold text-black">1</span>
                     </div>
-                      <div className="text-base font-bold text-black mt-1">Weight: {weights.carrierReliability.toFixed(2)}</div>
+                      <div className="text-sm font-bold text-black mt-1">Weight: {weights.carrierReliability.toFixed(2)}</div>
                   </div>
                   <div>
-                    <label htmlFor="routeComplexity" className="block text-sm font-medium text-gray-700">Route Complexity</label>
+                    <label htmlFor="routeComplexity" className="block text-md font-medium text-gray-700">Route Complexity</label>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-black">0</span>
                       <input
@@ -125,10 +125,10 @@ export default function RiskAnalysis() {
                       />
                         <span className="text-sm font-semibold text-black">1</span>
                     </div>
-                      <div className="text-base font-bold text-black mt-1">Weight: {weights.routeComplexity.toFixed(2)}</div>
+                      <div className="text-sm font-bold text-black mt-1">Weight: {weights.routeComplexity.toFixed(2)}</div>
                   </div>
                   <div>
-                    <label htmlFor="weatherPatterns" className="block text-sm font-medium text-gray-700">Weather Patterns</label>
+                    <label htmlFor="weatherPatterns" className="block text-md font-medium text-gray-700">Weather Patterns</label>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-black">0</span>
                       <input
@@ -143,10 +143,10 @@ export default function RiskAnalysis() {
                       />
                         <span className="text-sm font-semibold text-black">1</span>
                     </div>
-                      <div className="text-base font-bold text-black mt-1">Weight: {weights.weatherPatterns.toFixed(2)}</div>
+                      <div className="text-sm font-bold text-black mt-1">Weight: {weights.weatherPatterns.toFixed(2)}</div>
                   </div>
                   <div>
-                    <label htmlFor="borderCrossing" className="block text-sm font-medium text-gray-700">Border Crossing</label>
+                    <label htmlFor="borderCrossing" className="block text-md font-medium text-gray-700">Border Crossing</label>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-black">0</span>
                       <input
@@ -161,7 +161,7 @@ export default function RiskAnalysis() {
                       />
                         <span className="text-sm font-semibold text-black">1</span>
                     </div>
-                      <div className="text-base font-bold text-black mt-1">Weight: {weights.borderCrossing.toFixed(2)}</div>
+                      <div className="text-sm font-bold text-black mt-1">Weight: {weights.borderCrossing.toFixed(2)}</div>
                   </div>
                   </div>
                 </div>

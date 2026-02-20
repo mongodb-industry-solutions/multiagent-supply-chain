@@ -132,8 +132,16 @@ const calculateRiskMetrics = (factors, weights, routeData) => {
         sum + (Number(weights?.[key]) || 0) * (factors[key]?.score ?? 0),
       0
     ) / normalizedWeight;
-  const shipmentValue = Number(routeData?.cost) || 0;
-  const valueAtRisk = shipmentValue * weightedRisk;
+  
+  const routeCost = Number(routeData?.cost) || 0;
+  
+  // VaR formula: Base cost + risk-based penalties
+  // Base: 50% of route cost (minimum operational exposure)
+  // Risk premium: Route cost × weighted risk (potential additional costs from delays, penalties, etc.)
+  const baseCost = routeCost * 0.5;
+  const riskPremium = routeCost * weightedRisk;
+  const valueAtRisk = baseCost + riskPremium;
+  
   return {
     weightedRisk: clamp01(weightedRisk),
     valueAtRisk,

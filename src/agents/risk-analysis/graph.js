@@ -47,7 +47,7 @@ export async function callModel(state, config) {
       5. Run the retrieve_weather_events tool to get relevant weather or seasonal events.
       6. Run the retrieve_border_incidents tool to get relevant border incidents.
       7. Run the retrieve_carrier_performance tool to get recent shipment performance for the carrier.
-      8. After running the tools, ONLY recommend NEW weight adjustments if you find NEW risk factors that weren't previously addressed.
+      8. After running the tools, ONLY recommend NEW weight adjustments if you find NEW risk factors that weren't previously addressed OR it's the first time running.
       9. If current weights are already at 0.8 or higher for a risk factor, do NOT recommend increasing them further.
       10. At the end of your recommendations, show a summary of your weight adjustment recommendations in a JSON format.
 
