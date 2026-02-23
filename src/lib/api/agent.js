@@ -1,4 +1,4 @@
-export async function callRiskAnalysisAgent(route, { onEvent, weights } = {}) {
+export async function callRiskAnalysisAgent(route, { onEvent, weights, threadId } = {}) {
   // Use /api/chat for risk analysis agent
   const response = await fetch("/api/chat", {
     method: "POST",
@@ -6,6 +6,7 @@ export async function callRiskAnalysisAgent(route, { onEvent, weights } = {}) {
     body: JSON.stringify({
       message: `Analyze risk for this route:\n${JSON.stringify({ route, weights }, null, 2)}`,
       agentId: "risk-analysis",
+      threadId, // Pass threadId if provided
     }),
   });
   if (!response.body) throw new Error("No response body");

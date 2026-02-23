@@ -26,6 +26,7 @@ export default function RiskAnalysis() {
 
       console.log("Retrieved route data for risk analysis:", routeData);
       const parsedData = JSON.parse(routeData);
+      console.log("Parsed route data:", parsedData);
 
       setSelectedRouteData(parsedData);
     }
@@ -77,9 +78,9 @@ export default function RiskAnalysis() {
                   <div><strong>Transit Time:</strong> {selectedRouteData.time_hours} hours</div>
                   <div><strong>Reliability:</strong> {(
                     selectedRouteData.reliability_score > 1
-                      ? selectedRouteData.reliability_score
+                      ? selectedRouteData.reliability_score * 10
                       : selectedRouteData.reliability_score * 100
-                  ).toFixed(2)}%</div>
+                  ).toFixed(1)}%</div>
                 </div>
                 
                 {/* Risk Factor Weights - Right side on desktop */}
@@ -91,7 +92,7 @@ export default function RiskAnalysis() {
                   <div className="space-y-4">
                   {/* ...existing code for sliders... */}
                   <div>
-                    <label htmlFor="carrierReliability" className="block text-sm font-medium text-gray-700">Carrier Reliability</label>
+                    <label htmlFor="carrierReliability" className="block text-md font-medium text-gray-700">Carrier Reliability</label>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-black">0</span>
                       <input
@@ -106,10 +107,10 @@ export default function RiskAnalysis() {
                       />
                         <span className="text-sm font-semibold text-black">1</span>
                     </div>
-                      <div className="text-base font-bold text-black mt-1">Weight: {weights.carrierReliability.toFixed(2)}</div>
+                      <div className="text-sm font-bold text-black mt-1">Weight: {weights.carrierReliability.toFixed(2)}</div>
                   </div>
                   <div>
-                    <label htmlFor="routeComplexity" className="block text-sm font-medium text-gray-700">Route Complexity</label>
+                    <label htmlFor="routeComplexity" className="block text-md font-medium text-gray-700">Route Complexity</label>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-black">0</span>
                       <input
@@ -124,10 +125,10 @@ export default function RiskAnalysis() {
                       />
                         <span className="text-sm font-semibold text-black">1</span>
                     </div>
-                      <div className="text-base font-bold text-black mt-1">Weight: {weights.routeComplexity.toFixed(2)}</div>
+                      <div className="text-sm font-bold text-black mt-1">Weight: {weights.routeComplexity.toFixed(2)}</div>
                   </div>
                   <div>
-                    <label htmlFor="weatherPatterns" className="block text-sm font-medium text-gray-700">Weather Patterns</label>
+                    <label htmlFor="weatherPatterns" className="block text-md font-medium text-gray-700">Weather Patterns</label>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-black">0</span>
                       <input
@@ -142,10 +143,10 @@ export default function RiskAnalysis() {
                       />
                         <span className="text-sm font-semibold text-black">1</span>
                     </div>
-                      <div className="text-base font-bold text-black mt-1">Weight: {weights.weatherPatterns.toFixed(2)}</div>
+                      <div className="text-sm font-bold text-black mt-1">Weight: {weights.weatherPatterns.toFixed(2)}</div>
                   </div>
                   <div>
-                    <label htmlFor="borderCrossing" className="block text-sm font-medium text-gray-700">Border Crossing</label>
+                    <label htmlFor="borderCrossing" className="block text-md font-medium text-gray-700">Border Crossing</label>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-black">0</span>
                       <input
@@ -160,7 +161,7 @@ export default function RiskAnalysis() {
                       />
                         <span className="text-sm font-semibold text-black">1</span>
                     </div>
-                      <div className="text-base font-bold text-black mt-1">Weight: {weights.borderCrossing.toFixed(2)}</div>
+                      <div className="text-sm font-bold text-black mt-1">Weight: {weights.borderCrossing.toFixed(2)}</div>
                   </div>
                   </div>
                 </div>
