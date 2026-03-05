@@ -5,6 +5,7 @@ envSecrets:
   AWS_PROFILE: multiagent-supply-chain
   COMPLETION_MODEL: multiagent-supply-chain
   EMBEDDING_MODEL: multiagent-supply-chain
+  VOYAGE_API_KEY: multiagent-supply-chain
   NEXT_PUBLIC_ENV: multiagent-supply-chain
 
 serviceAccount:

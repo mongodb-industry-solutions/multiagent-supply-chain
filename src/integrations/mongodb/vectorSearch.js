@@ -1,8 +1,8 @@
 import getMongoClientPromise from "./client.js";
-import { generateEmbedding } from "../bedrock/embeddings.js";
+import { generateEmbedding } from "../voyageai/embeddings.js";
 
 /**
- * Perform a vector similarity search using Bedrock embeddings and MongoDB Atlas Vector Search.
+ * Perform a vector similarity search using Voyage AI embeddings and MongoDB Atlas Vector Search.
  *
  * @param {string} query - The query string to search for.
  * @param {object} dbConfig - The MongoDB vector search configuration.
