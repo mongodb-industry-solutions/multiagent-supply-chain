@@ -103,6 +103,7 @@ export default function RiskAnalysis() {
                         step="0.01"
                         value={weights.carrierReliability}
                         onChange={e => setWeights(w => ({ ...w, carrierReliability: parseFloat(e.target.value) }))}
+                        disabled={agentActive}
                         className="w-full accent-[#00ED64]" style={{ background: '#00684A' }}
                       />
                         <span className="text-sm font-semibold text-black">1</span>
@@ -121,6 +122,7 @@ export default function RiskAnalysis() {
                         step="0.01"
                         value={weights.routeComplexity}
                         onChange={e => setWeights(w => ({ ...w, routeComplexity: parseFloat(e.target.value) }))}
+                        disabled={agentActive}
                         className="w-full accent-[#00ED64]" style={{ background: '#00684A' }}
                       />
                         <span className="text-sm font-semibold text-black">1</span>
@@ -139,6 +141,7 @@ export default function RiskAnalysis() {
                         step="0.01"
                         value={weights.weatherPatterns}
                         onChange={e => setWeights(w => ({ ...w, weatherPatterns: parseFloat(e.target.value) }))}
+                        disabled={agentActive}
                         className="w-full accent-[#00ED64]" style={{ background: '#00684A' }}
                       />
                         <span className="text-sm font-semibold text-black">1</span>
@@ -157,6 +160,7 @@ export default function RiskAnalysis() {
                         step="0.01"
                         value={weights.borderCrossing}
                         onChange={e => setWeights(w => ({ ...w, borderCrossing: parseFloat(e.target.value) }))}
+                        disabled={agentActive}
                         className="w-full accent-[#00ED64]" style={{ background: '#00684A' }}
                       />
                         <span className="text-sm font-semibold text-black">1</span>
