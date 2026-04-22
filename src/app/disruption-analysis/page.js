@@ -80,12 +80,12 @@ export default function RootCauseAnalysis() {
             {/* Bottom: Delayed Shipments */}
             <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
               {/* Action Button */}
-              {selectedShipmentId && delayedShipments.length > 0 && (
+              {delayedShipments.length > 0 && (
                 <div className="flex justify-end mb-2 flex-shrink-0">
                   <Button
                     variant="primary"
                     size="small"
-                    disabled={agentActive}
+                    disabled={agentActive || !selectedShipmentId}
                     onClick={() => handleAnalyzeSelectedShipment(selectedShipmentId)}
                   >
                     {agentActive ? "Analyzing..." : "Analyze Selected Shipment"}

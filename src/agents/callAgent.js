@@ -13,28 +13,46 @@ const agentGraphCache = {};
  * @param {WritableStreamDefaultWriter} writer
  */
 function createAgentCallbacks(writer) {
+  const runIdToToolName = {};
   const writeLog = async (obj) => {
     await writer.ready;
     writer.write(JSON.stringify(obj) + "\n");
   };
   return {
     handleToolStart(tool, input, runId) {
-      console.log("[Tool Start]", JSON.parse(input).name);
+      const parsed = JSON.parse(input);
+      const toolName = parsed.name || tool?.name || "Tool";
+      runIdToToolName[runId] = toolName;
+      console.log("[Tool Start]", toolName);
       writeLog({
         type: "update",
         name: "tool_start",
-        values: JSON.parse(input),
+        values: parsed,
       });
     },
     handleToolEnd(output, runId) {
-      console.log("[Tool End]", output.name);
+      const toolName = runIdToToolName[runId] || output?.name || "Tool";
+      delete runIdToToolName[runId];
+      console.log("[Tool End]", toolName);
+      // output may be a string or a ToolMessage class instance — extract a safe string
+      const result = typeof output === "string"
+        ? output
+        : (output?.content != null ? String(output.content) : null);
       writeLog({
         type: "update",
         name: "tool_end",
-        values: output,
+        values: { name: toolName, result },
       });
     },
     handleToolError(err, runId) {
+      const toolName = runIdToToolName[runId] || "Tool";
+      delete runIdToToolName[runId];
+      // Emit tool_end so the loading spinner clears even on error
+      writeLog({
+        type: "update",
+        name: "tool_end",
+        values: { name: toolName, result: null },
+      });
       writeLog({
         type: "error",
         name: "tool_error",

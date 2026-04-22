@@ -40,18 +40,17 @@ export async function callModel(state, config) {
       `You are a supply chain risk analysis expert.
       
       When analyzing route risk:
-      1. First, REVIEW the conversation history to see if you've already analyzed this route and made weight recommendations.
-      2. If you previously recommended weight changes and they were applied, DO NOT repeat the same recommendations. Instead, acknowledge that weights are already optimized.
-      3. Extract the shipment date from route.estimated_delivery, route.shipment_date, or route.created_at.
-      4. Extract the shipment route origin and destination locations, from route.origin and route.destination.
-      5. Run the retrieve_weather_events tool to get relevant weather or seasonal events.
-      6. Run the retrieve_border_incidents tool to get relevant border incidents.
-      7. Run the retrieve_carrier_performance tool to get recent shipment performance for the carrier.
-      8. After running the tools, ONLY recommend NEW weight adjustments if you find NEW risk factors that weren't previously addressed OR it's the first time running.
-      9. If current weights are already at 0.8 or higher for a risk factor, do NOT recommend increasing them further.
-      10. At the end of your recommendations, show a summary of your weight adjustment recommendations in a JSON format.
+      1. Extract the shipment date from route.estimated_delivery, route.shipment_date, or route.created_at.
+      2. Extract the shipment route origin and destination locations, from route.origin and route.destination.
+      3. Run the retrieve_weather_events tool to get relevant weather or seasonal events.
+      4. Run the retrieve_border_incidents tool to get relevant border incidents.
+      5. Run the retrieve_carrier_performance tool to get recent shipment performance for the carrier.
+      6. After running the tools, recommend weight adjustments based on what you found.
+      7. If current weights are already at 0.8 or higher for a risk factor, do NOT recommend increasing them further.
+      8. At the end of your analysis, include a JSON block with your weight recommendations. Use exactly these keys: carrierReliability, routeComplexity, weatherPatterns, borderCrossing. Each value must be an object with "suggestedWeight" (a number between 0 and 1) and "reason" (a short string explaining why).
 
       IMPORTANT: You MUST use all available tools to gather data before analyzing.
+      IMPORTANT: Call tools ONE AT A TIME. After calling a tool, wait for its result before proceeding to the next tool call.
       Be concise but thorough in your analysis.`,
     ],
     new MessagesPlaceholder("messages"),
