@@ -3,20 +3,29 @@ import { useCallback, useMemo, useState, useRef, useEffect } from "react";
 // Process logs for display: chronological, tool_start shows loading, tool_end shows check, only reset on new agent call
 function processAgentLogs(logs = []) {
   const result = [];
-  let lastTool = null;
+  // Map toolName → most recent loading entry so parallel tool calls are matched correctly
+  const loadingByName = {};
+
   logs.forEach((log) => {
     if (log.name === "tool_start") {
-      lastTool = {
-        toolName: log.values?.name || log.values?.kwargs?.name || "Tool",
-        loading: true,
-        key: log.ts || Math.random(),
-      };
-      result.push(lastTool);
-    } else if (log.name === "tool_end" && lastTool) {
-      lastTool.loading = false;
-      lastTool = null;
+      const toolName = log.values?.name || log.values?.kwargs?.name || "Tool";
+      const entry = { toolName, loading: true, key: log.ts || Math.random() };
+      loadingByName[toolName] = entry;
+      result.push(entry);
+    } else if (log.name === "tool_end") {
+      const toolName = log.values?.name || log.values?.kwargs?.name || "Tool";
+      const entry = loadingByName[toolName];
+      if (entry) {
+        entry.loading = false;
+        delete loadingByName[toolName];
+      }
+    } else if (log.type === "final") {
+      // Agent finished — clear any tools that are still spinning
+      Object.values(loadingByName).forEach((entry) => { entry.loading = false; });
+      for (const k in loadingByName) delete loadingByName[k];
     }
   });
+
   return result;
 }
 

@@ -223,17 +223,23 @@ export default function RiskAnalysis() {
                     {riskAnalysis.summary}
                   </p>
                   {/* Mostrar botón para aplicar suggested weights si existen */}
-                  {riskAnalysis.weightRecommendations && !weightsApplied && (
+                  {riskAnalysis.weightRecommendations && !weightsApplied &&
+                   Object.entries(riskAnalysis.weightRecommendations).some(([key, rec]) =>
+                     rec && typeof rec.suggestedWeight === "number" &&
+                     Math.abs(rec.suggestedWeight - (weights[key] || 0)) >= 0.05
+                   ) && (
                     <div className="mt-4">
                       <Button
                         variant="primary"
                         size="small"
                         disabled={agentActive}
                         onClick={() => {
-                          setWeights(prev => ({
-                            ...prev,
-                            ...riskAnalysis.weightRecommendations
-                          }));
+                          const extracted = Object.fromEntries(
+                            Object.entries(riskAnalysis.weightRecommendations)
+                              .filter(([, v]) => typeof v?.suggestedWeight === "number")
+                              .map(([k, v]) => [k, v.suggestedWeight])
+                          );
+                          setWeights(prev => ({ ...prev, ...extracted }));
                           setWeightsApplied(true);
                         }}
                       >
@@ -270,69 +276,6 @@ export default function RiskAnalysis() {
                         </p>
                       </div>
                     )}
-                  </div>
-                )}
-
-                {/* Weight Recommendations - Enhanced */}
-                {riskAnalysis.weightRecommendations && 
-                 Object.entries(riskAnalysis.weightRecommendations).some(([key, rec]) => {
-                   if (!rec || typeof rec.suggestedWeight !== 'number') return false;
-                   const currentWeight = weights[key] || 0;
-                   const diff = Math.abs(rec.suggestedWeight - currentWeight);
-                   return diff >= 0.05; // Only show if there's a meaningful difference
-                 }) && (
-                  <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-3">
-                    <Subtitle className="text-sm font-semibold text-black mb-3 flex items-center gap-2">
-                      <span>🎯</span> Suggested Weight Adjustments
-                    </Subtitle>
-                    <div className="space-y-3">
-                      {Object.entries(riskAnalysis.weightRecommendations).map(([key, rec]) => {
-                        if (!rec || typeof rec.suggestedWeight !== 'number') return null;
-                        const currentWeight = weights[key] || 0;
-                        const diff = Math.abs(rec.suggestedWeight - currentWeight);
-                        if (diff < 0.05) return null; // Skip if already close
-                        
-                        const weightKeyMap = {
-                          carrierReliability: 'Carrier Reliability',
-                          routeComplexity: 'Route Complexity',
-                          weatherPatterns: 'Weather Patterns',
-                          borderCrossing: 'Border Crossing'
-                        };
-                        const displayName = weightKeyMap[key] || key.replace(/([A-Z])/g, ' $1').trim();
-                        
-                        return (
-                          <div key={key} className="bg-white rounded-lg p-3 border border-yellow-200">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1">
-                                <div className="font-semibold text-gray-800 mb-1">
-                                  {displayName}
-                                </div>
-                                <div className="text-xs text-gray-600 mb-2 leading-relaxed">
-                                  {rec.reason}
-                                </div>
-                                <div className="flex items-center gap-2 text-xs">
-                                  <span className="text-gray-500">Current:</span>
-                                  <span className="font-medium text-gray-700">{currentWeight.toFixed(2)}</span>
-                                  <span className="text-gray-400">→</span>
-                                  <span className="text-gray-500">Suggested:</span>
-                                  <span className="font-semibold text-blue-600">{rec.suggestedWeight.toFixed(2)}</span>
-                                </div>
-                              </div>
-                              <Button
-                                size="small"
-                                variant="primary"
-                                onClick={() => {
-                                  setWeights(w => ({ ...w, [key]: rec.suggestedWeight }));
-                                }}
-                                className="flex-shrink-0"
-                              >
-                                Apply
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
                   </div>
                 )}
 

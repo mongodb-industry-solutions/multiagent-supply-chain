@@ -217,14 +217,27 @@ export function useRiskAnalysis() {
         });
 
 
-        // Extrae el bloque JSON de weights sugeridos del texto del agente
         function extractWeightBlock(text) {
-          const match = text.match(/\{[^}]*\}/);
-          if (match) {
-            try {
-              return JSON.parse(match[0]);
-            } catch {
-              return null;
+          const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+          const candidate = fenceMatch ? fenceMatch[1] : text;
+
+          const start = candidate.indexOf('{');
+          if (start === -1) return null;
+          let depth = 0;
+          for (let i = start; i < candidate.length; i++) {
+            if (candidate[i] === '{') depth++;
+            else if (candidate[i] === '}') {
+              depth--;
+              if (depth === 0) {
+                try {
+                  const parsed = JSON.parse(candidate.slice(start, i + 1));
+                  const keys = ['carrierReliability', 'routeComplexity', 'weatherPatterns', 'borderCrossing'];
+                  const valid = keys.some(k => parsed[k] && typeof parsed[k].suggestedWeight === 'number');
+                  return valid ? parsed : null;
+                } catch {
+                  return null;
+                }
+              }
             }
           }
           return null;
