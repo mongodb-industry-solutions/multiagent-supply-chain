@@ -19,18 +19,18 @@ function createAgentCallbacks(writer) {
     writer.write(JSON.stringify(obj) + "\n");
   };
   return {
-    handleToolStart(tool, input, runId) {
+    async handleToolStart(tool, input, runId) {
       const parsed = JSON.parse(input);
       const toolName = parsed.name || tool?.name || "Tool";
       runIdToToolName[runId] = toolName;
       console.log("[Tool Start]", toolName);
-      writeLog({
+      await writeLog({
         type: "update",
         name: "tool_start",
         values: parsed,
       });
     },
-    handleToolEnd(output, runId) {
+    async handleToolEnd(output, runId) {
       const toolName = runIdToToolName[runId] || output?.name || "Tool";
       delete runIdToToolName[runId];
       console.log("[Tool End]", toolName);
@@ -38,36 +38,36 @@ function createAgentCallbacks(writer) {
       const result = typeof output === "string"
         ? output
         : (output?.content != null ? String(output.content) : null);
-      writeLog({
+      await writeLog({
         type: "update",
         name: "tool_end",
         values: { name: toolName, result },
       });
     },
-    handleToolError(err, runId) {
+    async handleToolError(err, runId) {
       const toolName = runIdToToolName[runId] || "Tool";
       delete runIdToToolName[runId];
       // Emit tool_end so the loading spinner clears even on error
-      writeLog({
+      await writeLog({
         type: "update",
         name: "tool_end",
         values: { name: toolName, result: null },
       });
-      writeLog({
+      await writeLog({
         type: "error",
         name: "tool_error",
         values: { name: err?.name || "unknown" },
       });
     },
-    handleLLMError(err, runId) {
-      writeLog({
+    async handleLLMError(err, runId) {
+      await writeLog({
         type: "error",
         name: "llm_error",
         values: { name: err?.name || "unknown" },
       });
     },
-    handleChainError(err, runId) {
-      writeLog({
+    async handleChainError(err, runId) {
+      await writeLog({
         type: "error",
         name: "chain_error",
         values: { name: err?.name || "unknown" },
