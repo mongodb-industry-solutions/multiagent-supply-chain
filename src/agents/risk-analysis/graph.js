@@ -1,9 +1,9 @@
 import { StateGraph } from "@langchain/langgraph";
-import { ToolNode } from "@langchain/langgraph/prebuilt";
 import {
   ChatPromptTemplate,
   MessagesPlaceholder,
 } from "@langchain/core/prompts";
+import { HumanMessage } from "@langchain/core/messages";
 import { MongoDBSaver } from "@langchain/langgraph-checkpoint-mongodb";
 import { createBedrockClient } from "../../integrations/bedrock/chat.js";
 import { StateAnnotation } from "./state.js";
@@ -11,95 +11,110 @@ import {
   retrieveWeatherEvents,
   retrieveBorderIncidents,
   retrieveCarrierPerformance,
-  retrieveRouteComplexity,
-  extractWeightRecommendation,
 } from "./tools.js";
 
-// Get available tools for risk analysis
-// TEMPORARILY: Start with just weather tool to debug tool display
-const tools = [
-  retrieveWeatherEvents,
-  retrieveBorderIncidents,
-  retrieveCarrierPerformance,
-  // retrieveRouteComplexity,
-];
+function extractRouteParams(content) {
+  let parsed = {};
+  try {
+    const match = content.match(/\{[\s\S]*\}/);
+    if (match) parsed = JSON.parse(match[0]);
+  } catch {
+    // ignore parse errors
+  }
 
-const toolNode = new ToolNode(tools);
+  // Message shape: { route: <riskAnalysisData>, weights: {...} }
+  // riskAnalysisData shape: { carrier, route: { origin, destination }, estimated_delivery, shipment_date, ... }
+  const data = parsed.route || {};
+  const nestedRoute = data.route || {};
 
-/**
- * Define the function that calls the model
- */
-export async function callModel(state, config) {
-  const model = createBedrockClient();
-  const bindedModel = model.bindTools(tools);
+  const origin = nestedRoute.origin || {};
+  const destination = nestedRoute.destination || {};
+  const carrier = data.carrier || "";
+  const rawDate =
+    data.estimated_delivery || data.shipment_date || data.created_at;
+  const date =
+    typeof rawDate === "string"
+      ? rawDate
+      : rawDate?.$date ?? new Date().toISOString();
+  const border =
+    origin.country &&
+    destination.country &&
+    origin.country.toLowerCase() !== destination.country.toLowerCase()
+      ? `${origin.country}-${destination.country}`
+      : "";
 
-  // Create a prompt template for risk analysis
-  const prompt = ChatPromptTemplate.fromMessages([
-    [
-      "system",
-      `You are a supply chain risk analysis expert.
-      
-      When analyzing route risk:
-      1. Extract the shipment date from route.estimated_delivery, route.shipment_date, or route.created_at.
-      2. Extract the shipment route origin and destination locations, from route.origin and route.destination.
-      3. Run the retrieve_weather_events tool to get relevant weather or seasonal events.
-      4. Run the retrieve_border_incidents tool to get relevant border incidents.
-      5. Run the retrieve_carrier_performance tool to get recent shipment performance for the carrier.
-      6. After running the tools, recommend weight adjustments based on what you found.
-      7. If current weights are already at 0.8 or higher for a risk factor, do NOT recommend increasing them further.
-      8. At the end of your analysis, include a JSON block with your weight recommendations. Use exactly these keys: carrierReliability, routeComplexity, weatherPatterns, borderCrossing. Each value must be an object with "suggestedWeight" (a number between 0 and 1) and "reason" (a short string explaining why).
+  return { origin, destination, carrier, date, border };
+}
 
-      IMPORTANT: You MUST use all available tools to gather data before analyzing.
-      IMPORTANT: Call tools ONE AT A TIME. After calling a tool, wait for its result before proceeding to the next tool call.
-      Be concise but thorough in your analysis.`,
-    ],
-    new MessagesPlaceholder("messages"),
+// Node 1: fetch all tool data in parallel — no LLM call
+async function fetchData(state, config) {
+  const lastMessage = state.messages[state.messages.length - 1];
+  const content =
+    typeof lastMessage.content === "string" ? lastMessage.content : "";
+  const { origin, destination, carrier, date, border } =
+    extractRouteParams(content);
+
+  const [weatherResults, borderResults, carrierResults] = await Promise.all([
+    retrieveWeatherEvents.invoke(
+      { origin, destination, date, name: "retrieve_weather_events" },
+      config
+    ),
+    retrieveBorderIncidents.invoke(
+      { border: border || "N/A", date, name: "retrieve_border_incidents" },
+      config
+    ),
+    retrieveCarrierPerformance.invoke(
+      { carrier, name: "retrieve_carrier_performance" },
+      config
+    ),
   ]);
 
-  // Format the prompt with the current state
-  const formattedPrompt = await prompt.formatMessages({
+  return {
+    messages: [
+      new HumanMessage(
+        `Data retrieved:\nWeather Events: ${weatherResults}\nBorder Incidents: ${borderResults}\nCarrier Performance: ${carrierResults}`
+      ),
+    ],
+  };
+}
+
+const analyzePrompt = ChatPromptTemplate.fromMessages([
+  [
+    "system",
+    `You are a supply chain risk analysis expert. Be concise.
+Based on the weather events, border incidents, and carrier performance data provided, write a brief risk analysis (3-5 sentences).
+End with a JSON block using exactly these keys: carrierReliability, routeComplexity, weatherPatterns, borderCrossing.
+Each value: {{"suggestedWeight": <number 0-1>, "reason": "<short string>"}}.
+Do not suggest increasing a weight already at 0.8 or above.`,
+  ],
+  new MessagesPlaceholder("messages"),
+]);
+
+// Node 2: analyze the fetched data — one LLM call
+async function analyze(state) {
+  const model = createBedrockClient();
+  const formattedPrompt = await analyzePrompt.formatMessages({
     messages: state.messages,
   });
 
   try {
-    const result = await bindedModel.invoke(formattedPrompt);
+    const result = await model.invoke(formattedPrompt);
     return { messages: [result] };
   } catch (error) {
-    console.error("Error calling risk analysis model:", error);
+    console.error("Error in risk analysis:", error);
     return {
-      messages: [
-        {
-          role: "ai",
-          content: "Error analyzing risk. Please try again.",
-        },
-      ],
+      messages: [{ role: "ai", content: "Error analyzing risk. Please try again." }],
     };
   }
 }
 
-/**
- * Determine the next step in the graph
- */
-export function shouldContinue(state) {
-  const messages = state.messages;
-  const lastMessage = messages[messages.length - 1];
-
-  // If the last message has tool calls, route to tools node
-  if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
-    return "tools";
-  }
-
-  // Otherwise, end the graph
-  return "__end__";
-}
-
 export function createAgentGraph(client, dbName) {
   const builder = new StateGraph(StateAnnotation)
-    .addNode("agent", callModel)
-    .addNode("tools", toolNode)
-    .addEdge("__start__", "agent")
-    .addConditionalEdges("agent", shouldContinue)
-    .addEdge("tools", "agent");
+    .addNode("fetchData", fetchData)
+    .addNode("analyze", analyze)
+    .addEdge("__start__", "fetchData")
+    .addEdge("fetchData", "analyze")
+    .addEdge("analyze", "__end__");
 
   let checkpointer = null;
   if (client && dbName) {
@@ -108,6 +123,5 @@ export function createAgentGraph(client, dbName) {
 
   const graph = builder.compile({ checkpointer });
   graph.name = "Risk Analysis Agent";
-
   return graph;
 }
