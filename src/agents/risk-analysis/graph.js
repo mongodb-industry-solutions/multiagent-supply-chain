@@ -43,7 +43,9 @@ function extractRouteParams(content) {
       ? `${origin.country}-${destination.country}`
       : "";
 
-  return { origin, destination, carrier, date, border };
+  const weights = parsed.weights || {};
+
+  return { origin, destination, carrier, date, border, weights };
 }
 
 // Node 1: fetch all tool data in parallel — no LLM call
@@ -51,7 +53,7 @@ async function fetchData(state, config) {
   const lastMessage = state.messages[state.messages.length - 1];
   const content =
     typeof lastMessage.content === "string" ? lastMessage.content : "";
-  const { origin, destination, carrier, date, border } =
+  const { origin, destination, carrier, date, border, weights } =
     extractRouteParams(content);
 
   const [weatherResults, borderResults, carrierResults] = await Promise.all([
@@ -69,10 +71,14 @@ async function fetchData(state, config) {
     ),
   ]);
 
+  const currentWeights = Object.entries(weights)
+    .map(([k, v]) => `  ${k}: ${v}`)
+    .join("\n");
+
   return {
     messages: [
       new HumanMessage(
-        `Data retrieved:\nWeather Events: ${weatherResults}\nBorder Incidents: ${borderResults}\nCarrier Performance: ${carrierResults}`
+        `Current risk weights:\n${currentWeights}\n\nData retrieved:\nWeather Events: ${weatherResults}\nBorder Incidents: ${borderResults}\nCarrier Performance: ${carrierResults}`
       ),
     ],
   };
@@ -85,7 +91,7 @@ const analyzePrompt = ChatPromptTemplate.fromMessages([
 Based on the weather events, border incidents, and carrier performance data provided, write a brief risk analysis (3-5 sentences).
 End with a JSON block using exactly these keys: carrierReliability, routeComplexity, weatherPatterns, borderCrossing.
 Each value: {{"suggestedWeight": <number 0-1>, "reason": "<short string>"}}.
-Do not suggest increasing a weight already at 0.8 or above.`,
+IMPORTANT: The current weights are shown in the message. For any factor whose current weight is already 0.8 or higher, you MUST keep suggestedWeight at or below its current value. Never suggest a higher value for those factors.`,
   ],
   new MessagesPlaceholder("messages"),
 ]);
