@@ -166,12 +166,9 @@ export function useRiskAnalysis() {
       setAvailableRoutes([parsed]);
       setSelectedRouteId(parsed.id || null);
       
-      // Generate a persistent thread ID based on route details
-      // This ensures the same route always uses the same conversation thread
       const routeSignature = `${parsed.carrier}-${parsed.route.origin.city}-${parsed.route.destination.city}`;
-      const threadId = `risk-${routeSignature.replace(/\s+/g, '-').toLowerCase()}`;
+      const threadId = `risk-${routeSignature.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`;
       setCurrentThreadId(threadId);
-      console.log(`🔗 Using persistent threadId: ${threadId}`);
     }
   }, []);
 
