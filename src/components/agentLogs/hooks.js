@@ -13,6 +13,8 @@ function processLogs(logs) {
         content: log.values?.content || log.values?.name || "",
       });
     } else if (log.type === "final") {
+      // Clear any tools still showing as loading when the agent finishes
+      uiLogs.forEach(l => { if (l.type === "tool" && l.loading) l.loading = false; });
       uiLogs.push({
         type: "ai",
         content: log.values?.content || log.values?.name || "",

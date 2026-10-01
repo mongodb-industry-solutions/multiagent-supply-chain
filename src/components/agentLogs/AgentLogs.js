@@ -26,7 +26,7 @@ export default function AgentLogs({ logs, threadId, onNewThread }) {
     <div className="flex flex-col h-full w-full max-w-full">
       {/* Header: Thread dropdown and new thread button */}
       <div className="flex items-center gap-2 p-3 shrink-0">
-        <Select
+        {/* <Select
           label="Thread"
           placeholder="New thread"
           name="thread-select"
@@ -37,14 +37,14 @@ export default function AgentLogs({ logs, threadId, onNewThread }) {
         >
           <Option value="new">New thread</Option>
           {threadId && <Option value={threadId}>{threadLabel}</Option>}
-        </Select>
-        <IconButton
+        </Select> */}
+        {/* <IconButton
           aria-label="Start new thread"
           onClick={handleNewThread}
           className="mt-5"
         >
           <Icon glyph="Plus" />
-        </IconButton>
+        </IconButton> */}
       </div>
       {/* Logs display */}
       <div

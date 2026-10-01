@@ -36,8 +36,9 @@ export async function callModel(state, config) {
       3. Finally, generate a comprehensive incident report using generate_shipment_incident_report
       
       IMPORTANT: You MUST complete all 3 steps for every shipment analysis.
+      IMPORTANT: Call tools ONE AT A TIME. After calling a tool, wait for its result before proceeding to the next tool call.
       Include specific QA report findings in your root cause analysis.
-      
+
       Be concise but thorough in your analysis.`,
     ],
     new MessagesPlaceholder("messages"),
