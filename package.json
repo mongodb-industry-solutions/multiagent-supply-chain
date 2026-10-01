@@ -63,5 +63,10 @@
     "eslint-config-next": "15.3.3",
     "license-checker": "^25.0.1",
     "tailwindcss": "^4"
+  },
+  "overrides": {
+    "sharp": "0.35.4",
+    "postcss": "8.5.18",
+    "brace-expansion@2": "2.1.6"
   }
 }
