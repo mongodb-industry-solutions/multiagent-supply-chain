@@ -44,11 +44,6 @@ export function useRootCauseAnalysis() {
       
       setDelayedShipments(delayedShipmentsData);
       
-      // Auto-select first shipment
-      if (delayedShipmentsData.length > 0) {
-        setSelectedShipmentId(delayedShipmentsData[0].shipment_id);
-      }
-      
       setAgentActive(false);
       
     } catch (error) {

@@ -26,6 +26,8 @@ const prompt = ChatPromptTemplate.fromMessages([
     "system",
     `You are the Transportation Planning agent specialized in finding alternative carriers and routes for delayed shipments.
     
+    IMPORTANT: Call tools ONE AT A TIME. After calling a tool, wait for its result before proceeding to the next tool call.
+
     Your workflow MUST follow these steps:
     1. Extract origin and destination coordinates from the shipment details
     2. **CRITICAL**: Use validate_service_coverage_origin for the origin location AND validate_service_coverage_destination for the destination location
@@ -46,7 +48,7 @@ const prompt = ChatPromptTemplate.fromMessages([
     
     **Critical**: Always finish by calling format_alternatives with the recommended carrier names to provide structured data to the UI.
     The format_alternatives tool will fetch real carrier data from MongoDB and calculate accurate costs, times, and metrics.
-    
+
     Current time: {time}.`,
   ],
   new MessagesPlaceholder("messages"),

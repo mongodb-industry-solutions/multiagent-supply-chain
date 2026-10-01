@@ -13,43 +13,61 @@ const agentGraphCache = {};
  * @param {WritableStreamDefaultWriter} writer
  */
 function createAgentCallbacks(writer) {
+  const runIdToToolName = {};
   const writeLog = async (obj) => {
     await writer.ready;
     writer.write(JSON.stringify(obj) + "\n");
   };
   return {
-    handleToolStart(tool, input, runId) {
-      console.log("[Tool Start]", JSON.parse(input).name);
-      writeLog({
+    async handleToolStart(tool, input, runId) {
+      const parsed = JSON.parse(input);
+      const toolName = parsed.name || tool?.name || "Tool";
+      runIdToToolName[runId] = toolName;
+      console.log("[Tool Start]", toolName);
+      await writeLog({
         type: "update",
         name: "tool_start",
-        values: JSON.parse(input),
+        values: parsed,
       });
     },
-    handleToolEnd(output, runId) {
-      console.log("[Tool End]", output.name);
-      writeLog({
+    async handleToolEnd(output, runId) {
+      const toolName = runIdToToolName[runId] || output?.name || "Tool";
+      delete runIdToToolName[runId];
+      console.log("[Tool End]", toolName);
+      // output may be a string or a ToolMessage class instance — extract a safe string
+      const result = typeof output === "string"
+        ? output
+        : (output?.content != null ? String(output.content) : null);
+      await writeLog({
         type: "update",
         name: "tool_end",
-        values: output,
+        values: { name: toolName, result },
       });
     },
-    handleToolError(err, runId) {
-      writeLog({
+    async handleToolError(err, runId) {
+      const toolName = runIdToToolName[runId] || "Tool";
+      delete runIdToToolName[runId];
+      // Emit tool_end so the loading spinner clears even on error
+      await writeLog({
+        type: "update",
+        name: "tool_end",
+        values: { name: toolName, result: null },
+      });
+      await writeLog({
         type: "error",
         name: "tool_error",
         values: { name: err?.name || "unknown" },
       });
     },
-    handleLLMError(err, runId) {
-      writeLog({
+    async handleLLMError(err, runId) {
+      await writeLog({
         type: "error",
         name: "llm_error",
         values: { name: err?.name || "unknown" },
       });
     },
-    handleChainError(err, runId) {
-      writeLog({
+    async handleChainError(err, runId) {
+      await writeLog({
         type: "error",
         name: "chain_error",
         values: { name: err?.name || "unknown" },

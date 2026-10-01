@@ -24,19 +24,56 @@ const normalizeDate = (value) => {
 
 const ACTIVE_STATUSES = ["active", "ongoing", "forecasted"];
 
+const WEATHER_PROJECTION = {
+	_id: 0,
+	type: 1,
+	name: 1,
+	severity: 1,
+	status: 1,
+	affected_states: 1,
+	start_date: 1,
+	end_date: 1,
+	"impact.avg_delay_hours": 1,
+};
+
+const INCIDENT_PROJECTION = {
+	_id: 0,
+	type: 1,
+	severity: 1,
+	title: 1,
+	description: 1,
+	reported_at: 1,
+	affected_carrier: 1,
+	estimated_delay_hours: 1,
+	status: 1,
+	tags: 1,
+	"location.checkpoint": 1,
+};
+
+const SHIPMENT_PROJECTION = {
+	_id: 0,
+	status: 1,
+	carrier: 1,
+	"origin.city": 1,
+	"origin.state": 1,
+	"destination.city": 1,
+	"destination.state": 1,
+	estimated_delivery: 1,
+	created_at: 1,
+};
+
 // Query relevant weather events for the route and dates
 export const retrieveWeatherEvents = tool(
-	async ({ origin, destination, date, n = 5 }) => {
+	async ({ origin, destination, date, n = 3 }) => {
 		try {
 			const client = await getMongoClientPromise();
 			const dbName = process.env.DATABASE_NAME;
 			const db = client.db(dbName);
 
-			// Handle date parsing - support ISO strings, MongoDB $date format, or Date objects
 			let analysisDate;
 			if (!date) {
 				analysisDate = new Date();
-			} else if (typeof date === 'string') {
+			} else if (typeof date === "string") {
 				analysisDate = new Date(date);
 			} else if (date.$date) {
 				analysisDate = new Date(date.$date);
@@ -45,87 +82,65 @@ export const retrieveWeatherEvents = tool(
 			} else {
 				analysisDate = new Date();
 			}
-			
+
 			if (isNaN(analysisDate.getTime())) {
 				console.warn("[retrieveWeatherEvents] Invalid date, using current date:", date);
 				analysisDate = new Date();
 			}
-		const windowStart = new Date(analysisDate);
-		windowStart.setDate(windowStart.getDate() - 30);
-		const windowEnd = new Date(analysisDate);
-		windowEnd.setDate(windowEnd.getDate() + 30);
 
-		const stateCodes = [
-			parseStateCode(origin),
-			parseStateCode(destination),
-		]
-			.filter(Boolean)
-			.map((state) => state.toUpperCase());
+			const windowStart = new Date(analysisDate);
+			windowStart.setDate(windowStart.getDate() - 30);
+			const windowEnd = new Date(analysisDate);
+			windowEnd.setDate(windowEnd.getDate() + 30);
 
-		const stateQuery = stateCodes.length
-			? { affected_states: { $in: stateCodes } }
-			: {};
+			const stateCodes = [parseStateCode(origin), parseStateCode(destination)]
+				.filter(Boolean)
+				.map((s) => s.toUpperCase());
 
-		const rawEvents = await db
-			.collection("weather_events")
-			.find(stateQuery)
-			.toArray();
+			const stateQuery = stateCodes.length
+				? { affected_states: { $in: stateCodes } }
+				: {};
 
-		const relevantEvents = rawEvents
-			.filter((event) => {
-				if (!stateCodes.length) return true;
-				const eventStates = (event.affected_states || []).map((s) =>
-					s.toUpperCase()
-				);
-				return eventStates.some((state) => stateCodes.includes(state));
-			})
-			.filter((event) => {
-				const startDate = normalizeDate(event.start_date);
-				const endDate = normalizeDate(event.end_date);
-				const status = (event.status || "").toLowerCase();
+			const rawEvents = await db
+				.collection("weather_events")
+				.find(stateQuery, { projection: WEATHER_PROJECTION })
+				.toArray();
 
-				if (startDate && endDate) {
-					return (
-						analysisDate >= startDate &&
-						analysisDate <= endDate
-					);
-				}
+			const relevantEvents = rawEvents
+				.filter((event) => {
+					if (!stateCodes.length) return true;
+					const eventStates = (event.affected_states || []).map((s) => s.toUpperCase());
+					return eventStates.some((s) => stateCodes.includes(s));
+				})
+				.filter((event) => {
+					const startDate = normalizeDate(event.start_date);
+					const endDate = normalizeDate(event.end_date);
+					const status = (event.status || "").toLowerCase();
 
-				if (startDate && !endDate && analysisDate >= startDate) {
-					return true;
-				}
-
-				if (ACTIVE_STATUSES.includes(status)) {
-					if (!startDate) return true;
-					return (
-						startDate <= windowEnd &&
-						startDate >= windowStart
-					);
-				}
-
-				if (startDate) {
-					return (
-						startDate <= windowEnd &&
-						startDate >= windowStart
-					);
-				}
-
-				return false;
-			})
-			.sort((a, b) => {
-				const aStart = normalizeDate(a.start_date)?.getTime() || 0;
-				const bStart = normalizeDate(b.start_date)?.getTime() || 0;
-				return bStart - aStart;
-			})
-			.slice(0, n);
+					if (startDate && endDate) {
+						return analysisDate >= startDate && analysisDate <= endDate;
+					}
+					if (startDate && !endDate && analysisDate >= startDate) return true;
+					if (ACTIVE_STATUSES.includes(status)) {
+						if (!startDate) return true;
+						return startDate <= windowEnd && startDate >= windowStart;
+					}
+					if (startDate) {
+						return startDate <= windowEnd && startDate >= windowStart;
+					}
+					return false;
+				})
+				.sort((a, b) => {
+					const aStart = normalizeDate(a.start_date)?.getTime() || 0;
+					const bStart = normalizeDate(b.start_date)?.getTime() || 0;
+					return bStart - aStart;
+				})
+				.slice(0, n);
 
 			return JSON.stringify(relevantEvents);
 		} catch (error) {
 			console.error("[retrieveWeatherEvents] Error:", error);
-			return JSON.stringify({
-				error: error.message || String(error),
-				events: [],
-			});
+			return JSON.stringify({ error: error.message || String(error), events: [] });
 		}
 	},
 	{
@@ -139,7 +154,7 @@ export const retrieveWeatherEvents = tool(
 					type: "string",
 					description: "Name of the tool for identification purposes",
 					enum: ["retrieve_weather_events"],
-				  },
+				},
 				origin: {
 					type: ["object", "string"],
 					description:
@@ -158,7 +173,7 @@ export const retrieveWeatherEvents = tool(
 				n: {
 					type: "number",
 					description: "Number of events to return",
-					default: 5,
+					default: 3,
 				},
 			},
 			required: ["origin", "destination", "date", "name"],
@@ -184,7 +199,6 @@ export const extractWeightRecommendation = tool(
 			console.error("[extractWeightRecommendation] Error:", error);
 			return "no_change";
 		}
-		
 	},
 	{
 		name: "extract_weight_recommendation",
@@ -193,6 +207,11 @@ export const extractWeightRecommendation = tool(
 		schema: {
 			type: "object",
 			properties: {
+				name: {
+					type: "string",
+					description: "Name of the tool for identification purposes",
+					enum: ["extract_weight_recommendation"],
+				},
 				analysis: {
 					type: "string",
 					description: "The risk analysis text to parse for recommendations.",
@@ -207,38 +226,31 @@ export const extractWeightRecommendation = tool(
 	}
 );
 
-// Query historical border incidents for the route
+// Query historical border crossing incidents for the route
 export const retrieveBorderIncidents = tool(
-	async ({ border, date, n = 5 }) => {
+	async ({ border, date, n = 3 }) => {
 		try {
 			const client = await getMongoClientPromise();
 			const dbName = process.env.DATABASE_NAME;
 			const db = client.db(dbName);
-			
-			// Normalize date for query
-			let queryDate = date;
-			if (date && typeof date === 'object' && date.$date) {
-				queryDate = date.$date;
-			} else if (date instanceof Date) {
-				queryDate = date.toISOString();
-			}
-			
-			const incidents = await db.collection("incidents")
+
+			const incidents = await db
+				.collection("incidents")
 				.find({
-					type: "border",
-					border,
-					date: { $lte: queryDate }
+					$or: [
+						{ tags: "border_crossing" },
+						{ "location.checkpoint": { $regex: border || "", $options: "i" } },
+					],
 				})
-				.sort({ date: -1 })
+				.sort({ reported_at: -1 })
 				.limit(n)
+				.project(INCIDENT_PROJECTION)
 				.toArray();
+
 			return JSON.stringify(incidents);
 		} catch (error) {
 			console.error("[retrieveBorderIncidents] Error:", error);
-			return JSON.stringify({
-				error: error.message || String(error),
-				incidents: [],
-			});
+			return JSON.stringify({ error: error.message || String(error), incidents: [] });
 		}
 	},
 	{
@@ -246,15 +258,15 @@ export const retrieveBorderIncidents = tool(
 		description: "Retrieve recent border crossing incidents for a given border and date.",
 		schema: {
 			type: "object",
-			name: {
+			properties: {
+				name: {
 					type: "string",
 					description: "Name of the tool for identification purposes",
 					enum: ["retrieve_border_incidents"],
-				  },
-			properties: {
+				},
 				border: { type: "string", description: "Border crossing name or code" },
 				date: { type: "string", description: "ISO date string" },
-				n: { type: "number", description: "Number of incidents to return", default: 5 }
+				n: { type: "number", description: "Number of incidents to return", default: 3 },
 			},
 			required: ["border", "date", "name"],
 		},
@@ -263,23 +275,22 @@ export const retrieveBorderIncidents = tool(
 
 // Get carrier reliability history
 export const retrieveCarrierPerformance = tool(
-	async ({ carrier, n = 5 }) => {
+	async ({ carrier, n = 3 }) => {
 		try {
 			const client = await getMongoClientPromise();
 			const dbName = process.env.DATABASE_NAME;
 			const db = client.db(dbName);
-			const shipments = await db.collection("shipments")
+			const shipments = await db
+				.collection("shipments")
 				.find({ carrier })
 				.sort({ created_at: -1 })
 				.limit(n)
+				.project(SHIPMENT_PROJECTION)
 				.toArray();
 			return JSON.stringify(shipments);
 		} catch (error) {
 			console.error("[retrieveCarrierPerformance] Error:", error);
-			return JSON.stringify({
-				error: error.message || String(error),
-				shipments: [],
-			});
+			return JSON.stringify({ error: error.message || String(error), shipments: [] });
 		}
 	},
 	{
@@ -287,71 +298,16 @@ export const retrieveCarrierPerformance = tool(
 		description: "Retrieve recent shipment performance for a specific carrier.",
 		schema: {
 			type: "object",
-			name: {
+			properties: {
+				name: {
 					type: "string",
 					description: "Name of the tool for identification purposes",
 					enum: ["retrieve_carrier_performance"],
-				  },
-			properties: {
+				},
 				carrier: { type: "string", description: "Carrier name" },
-				n: { type: "number", description: "Number of shipments to return", default: 5 }
+				n: { type: "number", description: "Number of shipments to return", default: 3 },
 			},
 			required: ["carrier", "name"],
 		},
 	}
 );
-
-// // Query historical data about similar route complexity
-// export const retrieveRouteComplexity = tool(
-// 	async ({ origin, destination, n = 5 }) => {
-// 		try {
-// 			const client = await getMongoClientPromise();
-// 			const dbName = process.env.DATABASE_NAME;
-// 			const db = client.db(dbName);
-
-// 			const originCity = typeof origin === "object" ? origin?.city : origin;
-// 			const originState = typeof origin === "object" ? origin?.state : undefined;
-// 			const destinationCity = typeof destination === "object" ? destination?.city : destination;
-// 			const destinationState = typeof destination === "object" ? destination?.state : undefined;
-
-// 			const match = {
-// 				...(originCity ? { "origin.city": originCity } : {}),
-// 				...(originState ? { "origin.state": originState } : {}),
-// 				...(destinationCity ? { "destination.city": destinationCity } : {}),
-// 				...(destinationState ? { "destination.state": destinationState } : {}),
-// 			};
-
-// 			const routes = await db.collection("shipments")
-// 				.find(match)
-// 				.sort({ "created_at.$date": -1 })
-// 				.limit(n)
-// 				.toArray();
-// 			return JSON.stringify(routes);
-// 		} catch (error) {
-// 			console.error("[retrieveRouteComplexity] Error:", error);
-// 			return JSON.stringify({
-// 				error: error.message || String(error),
-// 				routes: [],
-// 			});
-// 		}
-// 	},
-// 	{
-// 		name: "retrieve_route_complexity",
-// 		description: "Retrieve historical shipments for similar routes using the seeded shipments collection (origin/destination city/state).",
-// 		schema: {
-// 			type: "object",
-// 			properties: {
-// 				origin: {
-// 					type: ["object", "string"],
-// 					description: "Origin (object with city/state or string value).",
-// 				},
-// 				destination: {
-// 					type: ["object", "string"],
-// 					description: "Destination (object with city/state or string value).",
-// 				},
-// 				n: { type: "number", description: "Number of routes to return", default: 5 }
-// 			},
-// 			required: ["origin", "destination"],
-// 		},
-// 	}
-// );
